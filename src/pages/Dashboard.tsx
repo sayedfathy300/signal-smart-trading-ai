@@ -1,142 +1,106 @@
 
-import React, { useState } from 'react';
-import { LayoutDashboard, TrendingUp, ArrowUpDown, PieChart } from 'lucide-react';
+import React from 'react';
 import { CandlestickChart } from '@/components/CandlestickChart';
 import { MarketOverview } from '@/components/MarketOverview';
 import { StatCard } from '@/components/StatCard';
 import { TradingControls } from '@/components/TradingControls';
-import { useToast } from '@/hooks/use-toast';
+import { ArrowUpDown, BarChart2, DollarSign, TrendingUp } from 'lucide-react';
 
-interface DashboardProps {
-  lang: 'en' | 'ar';
+export interface DashboardProps {
+  lang?: 'en' | 'ar';
 }
 
-export default function Dashboard({ lang }: DashboardProps) {
-  const { toast } = useToast();
-  const [isTrading, setIsTrading] = useState(false);
-  
-  // Mock market data
+const Dashboard = ({ lang = 'en' }: DashboardProps) => {
+  // Hardcoded data for demonstration
   const marketItems = [
-    { id: '1', name: 'BTC/USDT', price: '68,245.30', change: '+1.2%', isUp: true },
-    { id: '2', name: 'ETH/USDT', price: '3,762.80', change: '+0.8%', isUp: true },
-    { id: '3', name: 'XRP/USDT', price: '0.5234', change: '-0.3%', isUp: false },
-    { id: '4', name: 'ADA/USDT', price: '0.4425', change: '+1.5%', isUp: true },
-    { id: '5', name: 'SOL/USDT', price: '143.62', change: '-0.7%', isUp: false },
-  ];
-  
-  // Arabic market data
-  const marketItemsAr = [
-    { id: '1', name: 'بيتكوين/دولار', price: '68,245.30', change: '+1.2%', isUp: true },
-    { id: '2', name: 'إيثريوم/دولار', price: '3,762.80', change: '+0.8%', isUp: true },
-    { id: '3', name: 'ريبل/دولار', price: '0.5234', change: '-0.3%', isUp: false },
-    { id: '4', name: 'كاردانو/دولار', price: '0.4425', change: '+1.5%', isUp: true },
-    { id: '5', name: 'سولانا/دولار', price: '143.62', change: '-0.7%', isUp: false },
+    { id: '1', name: 'BTC/USD', price: '$60,142.30', change: '+2.4%', isUp: true },
+    { id: '2', name: 'ETH/USD', price: '$3,120.45', change: '+1.8%', isUp: true },
+    { id: '3', name: 'XRP/USD', price: '$0.51', change: '-0.7%', isUp: false },
+    { id: '4', name: 'LTC/USD', price: '$82.14', change: '+0.3%', isUp: true },
+    { id: '5', name: 'BNB/USD', price: '$412.35', change: '-1.2%', isUp: false }
   ];
   
   const handleStartTrading = () => {
-    setIsTrading(true);
-    toast({
-      title: lang === 'en' ? 'Trading Started' : 'تم بدء التداول',
-      description: lang === 'en' 
-        ? 'Automated trading has been initiated' 
-        : 'تم بدء التداول الآلي',
-    });
+    console.log('Start trading');
   };
   
   const handleStopTrading = () => {
-    setIsTrading(false);
-    toast({
-      title: lang === 'en' ? 'Trading Stopped' : 'تم إيقاف التداول',
-      description: lang === 'en' 
-        ? 'Automated trading has been stopped' 
-        : 'تم إيقاف التداول الآلي',
-    });
+    console.log('Stop trading');
   };
   
   const handleSimulate = () => {
-    toast({
-      title: lang === 'en' ? 'Simulation Started' : 'تم بدء المحاكاة',
-      description: lang === 'en' 
-        ? 'Trading simulation has been started' 
-        : 'تم بدء محاكاة التداول',
-    });
+    console.log('Simulate trading');
   };
   
   return (
     <div className="p-6 space-y-6">
-      <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-        <h1 className="text-2xl font-bold">
-          {lang === 'en' ? 'Dashboard' : 'لوحة التحكم'}
-        </h1>
-        
-        <TradingControls 
-          onStart={handleStartTrading}
-          onStop={handleStopTrading}
-          onSimulate={handleSimulate}
-          isRunning={isTrading}
-          lang={lang}
-        />
-      </div>
+      <h1 className={`text-3xl font-bold ${lang === 'ar' ? 'rtl text-right' : ''}`}>
+        {lang === 'en' ? 'Trading Dashboard' : 'لوحة التداول'}
+      </h1>
       
+      {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
-          title={lang === 'en' ? 'Portfolio Value' : 'قيمة المحفظة'}
-          value="$24,685.00"
-          change="12.5%"
-          isUp={true}
-          icon={<PieChart size={24} />}
-          lang={lang}
-        />
-        <StatCard 
-          title={lang === 'en' ? 'Today Profit' : 'ربح اليوم'}
-          value="$1,247.00"
-          change="4.5%"
-          isUp={true}
-          icon={<TrendingUp size={24} />}
+          title={lang === 'en' ? 'Balance' : 'الرصيد'}
+          value="$12,459.32" 
+          change="2.4%" 
+          isUp={true} 
+          icon={<DollarSign className="h-5 w-5" />}
           lang={lang}
         />
         <StatCard 
           title={lang === 'en' ? 'Active Trades' : 'الصفقات النشطة'}
-          value="7"
-          icon={<ArrowUpDown size={24} />}
+          value="7" 
+          icon={<ArrowUpDown className="h-5 w-5" />}
           lang={lang}
         />
         <StatCard 
-          title={lang === 'en' ? 'Win Rate' : 'معدل الربح'}
-          value="93.4%"
-          change="2.1%"
-          isUp={true}
-          icon={<LayoutDashboard size={24} />}
+          title={lang === 'en' ? 'Success Rate' : 'معدل النجاح'}
+          value="94.3%" 
+          change="1.2%" 
+          isUp={true} 
+          icon={<TrendingUp className="h-5 w-5" />}
+          lang={lang}
+        />
+        <StatCard 
+          title={lang === 'en' ? 'Total Profit' : 'إجمالي الربح'}
+          value="$2,351.22" 
+          change="12.7%" 
+          isUp={true} 
+          icon={<BarChart2 className="h-5 w-5" />}
           lang={lang}
         />
       </div>
       
+      {/* Chart and Market Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <CandlestickChart 
-            title={lang === 'en' ? 'BTC/USDT Analysis' : 'تحليل بيتكوين/دولار'} 
+            title={lang === 'en' ? 'Market Analysis' : 'تحليل السوق'}
             lang={lang}
           />
         </div>
-        <div>
+        <div className="lg:col-span-1">
           <MarketOverview 
-            title={lang === 'en' ? 'Market Overview' : 'نظرة عامة على السوق'} 
-            items={lang === 'en' ? marketItems : marketItemsAr} 
+            title={lang === 'en' ? 'Market Overview' : 'نظرة عامة على السوق'}
+            items={marketItems}
             lang={lang}
           />
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CandlestickChart 
-          title={lang === 'en' ? 'Technical Indicators' : 'المؤشرات الفنية'} 
-          lang={lang}
-        />
-        <CandlestickChart 
-          title={lang === 'en' ? 'Pattern Recognition' : 'التعرف على الأنماط'} 
+      {/* Trading Controls */}
+      <div className="mt-6">
+        <TradingControls 
+          onStart={handleStartTrading}
+          onStop={handleStopTrading}
+          onSimulate={handleSimulate}
+          isRunning={false}
           lang={lang}
         />
       </div>
     </div>
   );
-}
+};
+
+export default Dashboard;
