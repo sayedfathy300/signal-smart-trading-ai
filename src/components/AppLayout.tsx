@@ -18,13 +18,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-trading-bg">
         <AppSidebar lang={lang} />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="border-b p-4 bg-white flex justify-end items-center">
+          <header className="border-b border-gray-800 p-4 bg-trading-card flex justify-end items-center">
             <LanguageSwitcher currentLang={lang} setLang={setLang} />
           </header>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-trading-bg">
             {/* Pass the language to all child components */}
             {React.cloneElement(children as React.ReactElement, { lang })}
           </main>

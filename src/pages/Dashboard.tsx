@@ -33,10 +33,15 @@ const Dashboard = ({ lang = 'en' }: DashboardProps) => {
   };
   
   return (
-    <div className="p-6 space-y-6">
-      <h1 className={`text-3xl font-bold ${lang === 'ar' ? 'rtl text-right' : ''}`}>
-        {lang === 'en' ? 'Trading Dashboard' : 'لوحة التداول'}
-      </h1>
+    <div className="p-6 space-y-6 min-h-screen bg-trading-bg">
+      <div className="signal-black-gradient p-6 rounded-lg border border-gray-800">
+        <h1 className={`text-3xl font-bold text-white ${lang === 'ar' ? 'rtl text-right' : ''}`}>
+          {lang === 'en' ? 'Signal Black Trading Dashboard' : 'لوحة تداول Signal Black'}
+        </h1>
+        <p className="text-gray-300 mt-2">
+          {lang === 'en' ? 'Advanced AI-powered trading platform' : 'منصة تداول متقدمة تعتمد على الذكاء الاصطناعي'}
+        </p>
+      </div>
       
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

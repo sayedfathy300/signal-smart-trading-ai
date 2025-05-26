@@ -21,7 +21,11 @@ import {
   PieChart, 
   Settings, 
   HelpCircle, 
-  LogOut 
+  LogOut,
+  Bot,
+  Brain,
+  Cpu,
+  Activity
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -62,6 +66,33 @@ const getSidebarItems = (lang: 'en' | 'ar') => [
   }
 ];
 
+const getAIItems = (lang: 'en' | 'ar') => [
+  {
+    id: 'ai-models',
+    title: lang === 'en' ? 'AI Models' : 'نماذج الذكاء الاصطناعي',
+    icon: Brain,
+    path: '/ai-models'
+  },
+  {
+    id: 'neural-networks',
+    title: lang === 'en' ? 'Neural Networks' : 'الشبكات العصبية',
+    icon: Cpu,
+    path: '/neural-networks'
+  },
+  {
+    id: 'trading-bot',
+    title: lang === 'en' ? 'Trading Bot' : 'بوت التداول',
+    icon: Bot,
+    path: '/trading-bot'
+  },
+  {
+    id: 'market-prediction',
+    title: lang === 'en' ? 'Market Prediction' : 'توقع السوق',
+    icon: Activity,
+    path: '/market-prediction'
+  }
+];
+
 const getSettingsItems = (lang: 'en' | 'ar') => [
   {
     id: 'settings',
@@ -86,6 +117,7 @@ const getSettingsItems = (lang: 'en' | 'ar') => [
 export function AppSidebar({ lang }: AppSidebarProps) {
   const isMobile = useIsMobile();
   const sidebarItems = getSidebarItems(lang);
+  const aiItems = getAIItems(lang);
   const settingsItems = getSettingsItems(lang);
   
   return (
@@ -95,16 +127,17 @@ export function AppSidebar({ lang }: AppSidebarProps) {
           <SidebarTrigger />
         </div>
       )}
-      <Sidebar className="border-r border-border">
-        <SidebarContent>
-          <div className="flex items-center justify-center py-6">
-            <span className="text-2xl font-bold text-trading-primary">
-              Signal <span className="font-light">Black</span>
+      <Sidebar className="border-r border-gray-800 bg-trading-dark">
+        <SidebarContent className="bg-trading-dark">
+          <div className="flex items-center justify-center py-6 signal-black-gradient">
+            <span className="text-2xl font-bold">
+              <span className="text-white">Signal</span>{' '}
+              <span className="text-trading-accent">Black</span>
             </span>
           </div>
 
           <SidebarGroup>
-            <SidebarGroupLabel className={cn(lang === 'ar' && 'rtl')}>
+            <SidebarGroupLabel className={cn("text-gray-400", lang === 'ar' && 'rtl')}>
               {lang === 'en' ? 'Navigation' : 'التنقل'}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -114,7 +147,36 @@ export function AppSidebar({ lang }: AppSidebarProps) {
                     <SidebarMenuButton asChild>
                       <Link 
                         to={item.path}
-                        className={cn("flex items-center gap-2", lang === 'ar' && 'rtl justify-end')}
+                        className={cn(
+                          "flex items-center gap-2 text-white hover:bg-trading-secondary hover:text-trading-up transition-colors",
+                          lang === 'ar' && 'rtl justify-end'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel className={cn("text-gray-400", lang === 'ar' && 'rtl')}>
+              {lang === 'en' ? 'AI & Trading' : 'الذكاء الاصطناعي والتداول'}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {aiItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton asChild>
+                      <Link 
+                        to={item.path}
+                        className={cn(
+                          "flex items-center gap-2 text-white hover:bg-trading-secondary hover:text-trading-up transition-colors",
+                          lang === 'ar' && 'rtl justify-end'
+                        )}
                       >
                         <item.icon className="h-5 w-5" />
                         <span>{item.title}</span>
@@ -127,7 +189,7 @@ export function AppSidebar({ lang }: AppSidebarProps) {
           </SidebarGroup>
 
           <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel className={cn(lang === 'ar' && 'rtl')}>
+            <SidebarGroupLabel className={cn("text-gray-400", lang === 'ar' && 'rtl')}>
               {lang === 'en' ? 'Account' : 'الحساب'}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -137,7 +199,10 @@ export function AppSidebar({ lang }: AppSidebarProps) {
                     <SidebarMenuButton asChild>
                       <Link 
                         to={item.path}
-                        className={cn("flex items-center gap-2", lang === 'ar' && 'rtl justify-end')}
+                        className={cn(
+                          "flex items-center gap-2 text-white hover:bg-trading-secondary hover:text-trading-down transition-colors",
+                          lang === 'ar' && 'rtl justify-end'
+                        )}
                       >
                         <item.icon className="h-5 w-5" />
                         <span>{item.title}</span>

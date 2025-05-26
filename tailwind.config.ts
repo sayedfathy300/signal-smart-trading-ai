@@ -63,14 +63,18 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-                // Custom trading colors
+                // نظام ألوان Signal Black - أسود وأحمر وأخضر
                 trading: {
-                    up: '#21CE99',     // Green for price increase
-                    down: '#FF6B6B',   // Red for price decrease
-                    primary: '#336CFB', // Primary blue color
-                    secondary: '#F5F6FA', // Light background for cards
-                    dark: '#2B2B2B',   // Dark text
-                    light: '#A0AEC0',  // Light text/icons
+                    up: '#10B981',     // أخضر للارتفاع
+                    down: '#EF4444',   // أحمر للانخفاض
+                    primary: '#000000', // أسود أساسي
+                    secondary: '#1F1F1F', // رمادي داكن
+                    dark: '#0A0A0A',   // أسود عميق
+                    light: '#9CA3AF',  // رمادي فاتح للنصوص
+                    accent: '#DC2626', // أحمر للتأكيد
+                    success: '#16A34A', // أخضر للنجاح
+                    bg: '#111111',     // خلفية داكنة
+                    card: '#1A1A1A',  // خلفية الكروت
                 }
 			},
 			borderRadius: {
@@ -112,13 +116,22 @@ export default {
                     '50%': {
                         opacity: '0.7'
                     }
+                },
+                'glow': {
+                    '0%, 100%': {
+                        boxShadow: '0 0 5px #10B981'
+                    },
+                    '50%': {
+                        boxShadow: '0 0 20px #10B981'
+                    }
                 }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
                 'fade-in': 'fade-in 0.5s ease-out forwards',
-                'pulse-light': 'pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                'pulse-light': 'pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'glow': 'glow 2s ease-in-out infinite'
 			},
             fontFamily: {
                 'poppins': ['Poppins', 'sans-serif'],
