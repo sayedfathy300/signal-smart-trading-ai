@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,28 +25,28 @@ interface FundamentalAnalysisProps {
   lang?: 'en' | 'ar';
 }
 
-export function FundamentalAnalysis({ symbol, lang = 'en' }: FundamentalAnalysisProps) {
+export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysisProps) {
   const [fundamentalData, setFundamentalData] = useState<any>(null);
   const [economicData, setEconomicData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1year' | '3years' | '5years'>('3years');
 
   useEffect(() => {
-    loadFundamentalData();
+    loadFundamentals();
   }, [symbol, selectedTimeframe]);
 
-  const loadFundamentalData = async () => {
+  const loadFundamentals = async () => {
     setLoading(true);
     try {
-      const [fundamental, economic] = await Promise.all([
-        fundamentalAnalysisService.getCompanyFundamentals(symbol),
+      const [fundamentalsData, economicData] = await Promise.all([
+        fundamentalAnalysisService.getCompanyFinancials(symbol),
         fundamentalAnalysisService.getEconomicIndicators()
       ]);
-      
-      setFundamentalData(fundamental);
-      setEconomicData(economic);
+
+      setFundamentalData(fundamentalsData);
+      setEconomicData(economicData);
     } catch (error) {
-      console.error('Error loading fundamental data:', error);
+      console.error('Error loading fundamentals:', error);
     } finally {
       setLoading(false);
     }
@@ -139,7 +138,7 @@ export function FundamentalAnalysis({ symbol, lang = 'en' }: FundamentalAnalysis
               </Button>
             ))}
           </div>
-          <Button onClick={loadFundamentalData} size="sm" variant="outline">
+          <Button onClick={loadFundamentals} size="sm" variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             {lang === 'ar' ? 'تحديث' : 'Refresh'}
           </Button>
