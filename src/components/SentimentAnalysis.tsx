@@ -1,42 +1,56 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { sentimentAnalysisService, ComprehensiveSentimentAnalysis } from '@/services/sentimentAnalysisService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Area, AreaChart } from 'recharts';
 import { 
   Brain, 
-  Twitter, 
-  MessageSquare, 
-  Newspaper,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Eye,
+  TrendingUp, 
+  TrendingDown, 
+  AlertTriangle, 
   Globe,
+  Twitter,
+  MessageSquare,
+  Newspaper,
+  Eye,
   Zap,
   RefreshCw
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { sentimentAnalysisService, ComprehensiveSentimentAnalysis } from '@/services/sentimentAnalysisService';
-import { cn } from '@/lib/utils';
 
 interface SentimentAnalysisProps {
   symbol: string;
   lang?: 'en' | 'ar';
-  className?: string;
 }
 
-export function SentimentAnalysis({ symbol, lang = 'en', className }: SentimentAnalysisProps) {
+export function SentimentAnalysis({ symbol, lang = 'en' }: SentimentAnalysisProps) {
   const [sentimentData, setSentimentData] = useState<ComprehensiveSentimentAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [realTimeMonitoring, setRealTimeMonitoring] = useState(false);
-  const [monitoringStop, setMonitoringStop] = useState<(() => void) | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'hourly' | 'daily' | 'weekly'>('daily');
 
   useEffect(() => {
     loadSentimentData();
   }, [symbol]);
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    
+    if (realTimeMonitoring) {
+      sentimentAnalysisService.startRealTimeSentimentMonitoring(symbol, (data) => {
+        setSentimentData(data);
+      }).then(stopMonitoring => {
+        cleanup = stopMonitoring;
+      });
+    }
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [realTimeMonitoring, symbol]);
 
   const loadSentimentData = async () => {
     setLoading(true);
@@ -50,42 +64,43 @@ export function SentimentAnalysis({ symbol, lang = 'en', className }: SentimentA
     }
   };
 
-  const toggleRealTimeMonitoring = async () => {
-    if (realTimeMonitoring && monitoringStop) {
-      monitoringStop();
-      setMonitoringStop(null);
-      setRealTimeMonitoring(false);
-    } else {
-      const stopFn = await sentimentAnalysisService.startRealTimeSentimentMonitoring(
-        symbol,
-        (data) => setSentimentData(data)
-      );
-      setMonitoringStop(() => stopFn);
-      setRealTimeMonitoring(true);
-    }
-  };
-
   const getSentimentColor = (score: number) => {
-    if (score > 0.1) return 'text-green-400';
-    if (score < -0.1) return 'text-red-400';
-    return 'text-gray-400';
+    if (score > 0.2) return '#00FF88';
+    if (score < -0.2) return '#FF4444';
+    return '#FFD700';
   };
 
-  const getSentimentBgColor = (score: number) => {
-    if (score > 0.1) return 'bg-green-500/20';
-    if (score < -0.1) return 'bg-red-500/20';
-    return 'bg-gray-500/20';
+  const getSentimentLabel = (score: number) => {
+    if (score > 0.6) return lang === 'ar' ? 'إيجابي جداً' : 'Very Positive';
+    if (score > 0.2) return lang === 'ar' ? 'إيجابي' : 'Positive';
+    if (score > -0.2) return lang === 'ar' ? 'محايد' : 'Neutral';
+    if (score > -0.6) return lang === 'ar' ? 'سلبي' : 'Negative';
+    return lang === 'ar' ? 'سلبي جداً' : 'Very Negative';
   };
 
-  const fearGreedColors = ['#FF4444', '#FF8800', '#FFDD00', '#88FF00', '#00FF44'];
+  const getFearGreedColor = (value: number) => {
+    if (value <= 20) return '#FF4444';
+    if (value <= 40) return '#FF8800';
+    if (value <= 60) return '#FFD700';
+    if (value <= 80) return '#88FF88';
+    return '#00FF88';
+  };
+
+  const getFearGreedLabel = (value: number) => {
+    if (value <= 20) return lang === 'ar' ? 'خوف شديد' : 'Extreme Fear';
+    if (value <= 40) return lang === 'ar' ? 'خوف' : 'Fear';
+    if (value <= 60) return lang === 'ar' ? 'محايد' : 'Neutral';
+    if (value <= 80) return lang === 'ar' ? 'طمع' : 'Greed';
+    return lang === 'ar' ? 'طمع شديد' : 'Extreme Greed';
+  };
 
   if (loading) {
     return (
-      <Card className={cn("bg-trading-card border-gray-800", className)}>
+      <Card className="bg-trading-card border-gray-800">
         <CardContent className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-trading-light animate-pulse">
-              {lang === 'ar' ? 'جاري تحليل المشاعر...' : 'Analyzing Market Sentiment...'}
+              {lang === 'ar' ? 'جاري تحليل المشاعر...' : 'Loading Sentiment Analysis...'}
             </div>
           </div>
         </CardContent>
@@ -95,224 +110,301 @@ export function SentimentAnalysis({ symbol, lang = 'en', className }: SentimentA
 
   if (!sentimentData) {
     return (
-      <Card className={cn("bg-trading-card border-gray-800", className)}>
+      <Card className="bg-trading-card border-gray-800">
         <CardContent className="p-6">
           <div className="text-center text-gray-400">
-            {lang === 'ar' ? 'فشل في تحميل بيانات المشاعر' : 'Failed to load sentiment data'}
+            {lang === 'ar' ? 'لا توجد بيانات مشاعر متاحة' : 'No sentiment data available'}
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  const pieChartData = [
+    { 
+      name: lang === 'ar' ? 'إيجابي' : 'Positive', 
+      value: Math.max(0, sentimentData.overall_sentiment.score) * 100,
+      color: '#00FF88'
+    },
+    { 
+      name: lang === 'ar' ? 'محايد' : 'Neutral', 
+      value: (1 - Math.abs(sentimentData.overall_sentiment.score)) * 100,
+      color: '#FFD700'
+    },
+    { 
+      name: lang === 'ar' ? 'سلبي' : 'Negative', 
+      value: Math.max(0, -sentimentData.overall_sentiment.score) * 100,
+      color: '#FF4444'
+    }
+  ];
+
   return (
-    <div className={cn("space-y-6", className)}>
-      {/* رأس التحليل */}
-      <Card className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-purple-500/30">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-purple-400">
-              <Brain className="h-6 w-6" />
-              {lang === 'ar' ? `تحليل المشاعر المتقدم - ${symbol}` : `Advanced Sentiment Analysis - ${symbol}`}
+    <div className="space-y-6">
+      {/* Header with Controls */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">
+          {lang === 'ar' ? `تحليل المشاعر - ${symbol}` : `Sentiment Analysis - ${symbol}`}
+        </h2>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setRealTimeMonitoring(!realTimeMonitoring)}
+            variant={realTimeMonitoring ? 'default' : 'outline'}
+            size="sm"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            {realTimeMonitoring ? 
+              (lang === 'ar' ? 'إيقاف المراقبة' : 'Stop Monitoring') :
+              (lang === 'ar' ? 'مراقبة فورية' : 'Live Monitor')
+            }
+          </Button>
+          <Button onClick={loadSentimentData} size="sm" variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {lang === 'ar' ? 'تحديث' : 'Refresh'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Overall Sentiment Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Brain className="h-4 w-4" />
+              {lang === 'ar' ? 'المشاعر العامة' : 'Overall Sentiment'}
             </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                onClick={loadSentimentData}
-                disabled={loading}
-                size="sm"
-                variant="outline"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {lang === 'ar' ? 'تحديث' : 'Refresh'}
-              </Button>
-              <Button
-                onClick={toggleRealTimeMonitoring}
-                size="sm"
-                variant={realTimeMonitoring ? 'destructive' : 'default'}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                {realTimeMonitoring 
-                  ? (lang === 'ar' ? 'إيقاف المراقبة' : 'Stop Monitoring')
-                  : (lang === 'ar' ? 'مراقبة مباشرة' : 'Live Monitoring')
-                }
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          </CardHeader>
+          <CardContent>
             <div className="text-center">
-              <div className="text-3xl font-bold mb-1" style={{ color: getSentimentColor(sentimentData.overall_sentiment.score) }}>
+              <div 
+                className="text-3xl font-bold mb-2"
+                style={{ color: getSentimentColor(sentimentData.overall_sentiment.score) }}
+              >
                 {(sentimentData.overall_sentiment.score * 100).toFixed(1)}%
               </div>
-              <div className="text-sm text-gray-400">
-                {lang === 'ar' ? 'المشاعر الإجمالية' : 'Overall Sentiment'}
-              </div>
-              <Badge className={getSentimentBgColor(sentimentData.overall_sentiment.score)}>
-                {sentimentData.overall_sentiment.label}
+              <Badge 
+                style={{ 
+                  backgroundColor: getSentimentColor(sentimentData.overall_sentiment.score),
+                  color: 'black'
+                }}
+              >
+                {getSentimentLabel(sentimentData.overall_sentiment.score)}
               </Badge>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                {(sentimentData.overall_sentiment.confidence * 100).toFixed(0)}%
-              </div>
-              <div className="text-sm text-gray-400">
-                {lang === 'ar' ? 'مستوى الثقة' : 'Confidence'}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400 mb-1">
-                {sentimentData.social_media.twitter.mentions.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-400">
-                {lang === 'ar' ? 'الإشارات على تويتر' : 'Twitter Mentions'}
+              <Progress 
+                value={Math.abs(sentimentData.overall_sentiment.score) * 100}
+                className="mt-3"
+              />
+              <div className="text-xs text-gray-400 mt-2">
+                {lang === 'ar' ? 'الثقة:' : 'Confidence:'} {(sentimentData.overall_sentiment.confidence * 100).toFixed(1)}%
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-400 mb-1">
-                {sentimentData.social_media.reddit.mentions.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-400">
-                {lang === 'ar' ? 'الإشارات على Reddit' : 'Reddit Mentions'}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* التنبيهات */}
-      {sentimentData.alerts.length > 0 && (
-        <Card className="bg-yellow-900/20 border-yellow-500/50">
+        <Card className="bg-trading-card border-gray-800">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-yellow-400">
-              <AlertTriangle className="h-5 w-5" />
-              {lang === 'ar' ? 'تنبيهات المشاعر' : 'Sentiment Alerts'}
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Twitter className="h-4 w-4" />
+              {lang === 'ar' ? 'تويتر/X' : 'Twitter/X'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {sentimentData.alerts.map((alert, index) => (
-                <div key={index} className={`p-3 rounded-lg border ${
-                  alert.severity === 'high' ? 'bg-red-900/20 border-red-500/50' :
-                  alert.severity === 'medium' ? 'bg-yellow-900/20 border-yellow-500/50' :
-                  'bg-blue-900/20 border-blue-500/50'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white">{alert.message}</span>
-                    <Badge variant={alert.severity === 'high' ? 'destructive' : 'secondary'}>
-                      {alert.severity}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'الإشارات:' : 'Mentions:'}</span>
+                <span className="font-bold">{sentimentData.social_media.twitter.mentions.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'المشاعر:' : 'Sentiment:'}</span>
+                <Badge 
+                  variant={
+                    sentimentData.social_media.twitter.sentiment.score > 0.1 ? 'default' :
+                    sentimentData.social_media.twitter.sentiment.score < -0.1 ? 'destructive' : 'secondary'
+                  }
+                >
+                  {(sentimentData.social_media.twitter.sentiment.score * 100).toFixed(1)}%
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'التفاعل:' : 'Engagement:'}</span>
+                <span className="font-bold">{sentimentData.social_media.twitter.engagement.toLocaleString()}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* التحليلات التفصيلية */}
-      <Tabs defaultValue="overview" className="space-y-6">
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <MessageSquare className="h-4 w-4" />
+              Reddit
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'الإشارات:' : 'Mentions:'}</span>
+                <span className="font-bold">{sentimentData.social_media.reddit.mentions.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'المشاعر:' : 'Sentiment:'}</span>
+                <Badge 
+                  variant={
+                    sentimentData.social_media.reddit.sentiment.score > 0.1 ? 'default' :
+                    sentimentData.social_media.reddit.sentiment.score < -0.1 ? 'destructive' : 'secondary'
+                  }
+                >
+                  {(sentimentData.social_media.reddit.sentiment.score * 100).toFixed(1)}%
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-400">{lang === 'ar' ? 'التأثير:' : 'Influence:'}</span>
+                <Progress value={sentimentData.social_media.reddit.influence_score * 100} className="w-16" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Eye className="h-4 w-4" />
+              {lang === 'ar' ? 'مؤشر الخوف والطمع' : 'Fear & Greed Index'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center">
+              <div 
+                className="text-3xl font-bold mb-2"
+                style={{ color: getFearGreedColor(sentimentData.fear_greed_index.value) }}
+              >
+                {sentimentData.fear_greed_index.value}
+              </div>
+              <Badge 
+                style={{ 
+                  backgroundColor: getFearGreedColor(sentimentData.fear_greed_index.value),
+                  color: 'white'
+                }}
+              >
+                {getFearGreedLabel(sentimentData.fear_greed_index.value)}
+              </Badge>
+              <div className="text-xs text-gray-400 mt-2">
+                24h: {sentimentData.fear_greed_index.change_24h > 0 ? '+' : ''}{sentimentData.fear_greed_index.change_24h.toFixed(1)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Analysis Tabs */}
+      <Tabs defaultValue="trends" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5 bg-trading-card">
-          <TabsTrigger value="overview">
-            {lang === 'ar' ? 'نظرة عامة' : 'Overview'}
-          </TabsTrigger>
-          <TabsTrigger value="news">
-            {lang === 'ar' ? 'الأخبار' : 'News'}
-          </TabsTrigger>
-          <TabsTrigger value="social">
-            {lang === 'ar' ? 'وسائل التواصل' : 'Social Media'}
-          </TabsTrigger>
-          <TabsTrigger value="fear-greed">
-            {lang === 'ar' ? 'الخوف والطمع' : 'Fear & Greed'}
-          </TabsTrigger>
-          <TabsTrigger value="nlp">
-            {lang === 'ar' ? 'تحليل النصوص' : 'NLP Analysis'}
-          </TabsTrigger>
+          <TabsTrigger value="trends">{lang === 'ar' ? 'الاتجاهات' : 'Trends'}</TabsTrigger>
+          <TabsTrigger value="news">{lang === 'ar' ? 'الأخبار' : 'News'}</TabsTrigger>
+          <TabsTrigger value="nlp">{lang === 'ar' ? 'تحليل النصوص' : 'NLP Analysis'}</TabsTrigger>
+          <TabsTrigger value="market-mood">{lang === 'ar' ? 'حالة السوق' : 'Market Mood'}</TabsTrigger>
+          <TabsTrigger value="alerts">{lang === 'ar' ? 'التنبيهات' : 'Alerts'}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* اتجاهات المشاعر */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'اتجاهات المشاعر اليومية' : 'Daily Sentiment Trends'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={sentimentData.sentiment_trends.daily}>
+        <TabsContent value="trends" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>{lang === 'ar' ? 'اتجاهات المشاعر' : 'Sentiment Trends'}</CardTitle>
+                <div className="flex gap-2">
+                  {(['hourly', 'daily', 'weekly'] as const).map(timeframe => (
+                    <Button
+                      key={timeframe}
+                      size="sm"
+                      variant={selectedTimeframe === timeframe ? 'default' : 'outline'}
+                      onClick={() => setSelectedTimeframe(timeframe)}
+                    >
+                      {timeframe === 'hourly' ? (lang === 'ar' ? 'ساعي' : 'Hourly') :
+                       timeframe === 'daily' ? (lang === 'ar' ? 'يومي' : 'Daily') :
+                       (lang === 'ar' ? 'أسبوعي' : 'Weekly')}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sentimentData.sentiment_trends[selectedTimeframe]}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="date" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
+                    <XAxis 
+                      dataKey={selectedTimeframe === 'hourly' ? 'time' : selectedTimeframe === 'daily' ? 'date' : 'week'}
+                      stroke="#9CA3AF"
+                    />
+                    <YAxis stroke="#9CA3AF" domain={[-1, 1]} />
                     <Tooltip 
                       contentStyle={{
                         backgroundColor: '#1F2937',
                         border: '1px solid #374151',
-                        borderRadius: '6px'
+                        borderRadius: '6px',
+                        color: '#F3F4F6'
                       }}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="#8B5CF6" 
+                    <Area
+                      dataKey="score"
+                      stroke="#60A5FA"
+                      fill="url(#sentimentGradient)"
                       strokeWidth={2}
-                      dot={{ fill: '#8B5CF6', strokeWidth: 2 }}
                     />
-                  </LineChart>
+                    <defs>
+                      <linearGradient id="sentimentGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#60A5FA" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                  </AreaChart>
                 </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle>{lang === 'ar' ? 'توزيع المشاعر' : 'Sentiment Distribution'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={60}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
-            {/* مزاج السوق */}
             <Card className="bg-trading-card border-gray-800">
               <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'مزاج السوق' : 'Market Mood'}
-                </CardTitle>
+                <CardTitle>{lang === 'ar' ? 'مؤشرات الخوف والطمع' : 'Fear & Greed Components'}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">
-                      {lang === 'ar' ? 'المستثمرون الأفراد' : 'Retail Investors'}
-                    </span>
-                    <span className="text-white">
-                      {sentimentData.market_mood.retail_sentiment.toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.abs(sentimentData.market_mood.retail_sentiment)} 
-                    className="h-2"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">
-                      {lang === 'ar' ? 'المؤسسات' : 'Institutions'}
-                    </span>
-                    <span className="text-white">
-                      {sentimentData.market_mood.institutional_sentiment.toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.abs(sentimentData.market_mood.institutional_sentiment)} 
-                    className="h-2"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">
-                      {lang === 'ar' ? 'المحللون' : 'Analysts'}
-                    </span>
-                    <span className="text-white">
-                      {sentimentData.market_mood.analyst_sentiment.toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.abs(sentimentData.market_mood.analyst_sentiment)} 
-                    className="h-2"
-                  />
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(sentimentData.fear_greed_index.components).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center">
+                      <span className="text-sm capitalize">{key.replace('_', ' ')}</span>
+                      <div className="flex items-center gap-2">
+                        <Progress value={value} className="w-20" />
+                        <span className="text-sm font-bold">{value.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -322,28 +414,45 @@ export function SentimentAnalysis({ symbol, lang = 'en', className }: SentimentA
         <TabsContent value="news" className="space-y-6">
           <Card className="bg-trading-card border-gray-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
+              <CardTitle className="flex items-center gap-2">
                 <Newspaper className="h-5 w-5" />
                 {lang === 'ar' ? 'تحليل الأخبار المالية' : 'Financial News Analysis'}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {sentimentData.news_analysis.map((news, index) => (
-                  <div key={index} className="p-4 bg-trading-secondary rounded-lg border border-gray-700">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-white font-medium flex-1">{news.headline}</h4>
-                      <Badge className={getSentimentBgColor(news.sentiment.score)}>
-                        {news.sentiment.label}
+                {sentimentData.news_analysis.slice(0, 10).map((news, index) => (
+                  <div key={index} className="p-4 bg-gray-800/50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-white line-clamp-2">{news.headline}</h4>
+                      <Badge 
+                        variant={news.impact === 'high' ? 'destructive' : news.impact === 'medium' ? 'default' : 'secondary'}
+                      >
+                        {news.impact.toUpperCase()}
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-sm text-gray-400">
-                      <span>{news.source}</span>
-                      <div className="flex items-center gap-4">
-                        <span>تأثير: {news.impact}</span>
-                        <span>نقاط: {(news.sentiment.score * 100).toFixed(1)}%</span>
-                        <span>ثقة: {(news.sentiment.confidence * 100).toFixed(0)}%</span>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-400">{news.source}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          style={{ 
+                            backgroundColor: getSentimentColor(news.sentiment.score),
+                            color: 'black'
+                          }}
+                        >
+                          {(news.sentiment.score * 100).toFixed(1)}%
+                        </Badge>
+                        <span className="text-gray-400">
+                          {new Date(news.timestamp).toLocaleDateString()}
+                        </span>
                       </div>
+                    </div>
+                    <Progress 
+                      value={news.relevance * 100}
+                      className="mt-2"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {lang === 'ar' ? 'الصلة:' : 'Relevance:'} {(news.relevance * 100).toFixed(1)}%
                     </div>
                   </div>
                 ))}
@@ -352,251 +461,239 @@ export function SentimentAnalysis({ symbol, lang = 'en', className }: SentimentA
           </Card>
         </TabsContent>
 
-        <TabsContent value="social" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* تويتر */}
+        <TabsContent value="nlp" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-trading-card border-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-400">
-                  <Twitter className="h-5 w-5" />
-                  {lang === 'ar' ? 'تحليل تويتر/X' : 'Twitter/X Analysis'}
-                </CardTitle>
+                <CardTitle>{lang === 'ar' ? 'الكلمات المفتاحية' : 'Keywords'}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-white">
-                      {sentimentData.social_media.twitter.mentions.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-400">الإشارات</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-white">
-                      {sentimentData.social_media.twitter.engagement.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-gray-400">التفاعل</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400 mb-2">المواضيع الرائجة:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {sentimentData.social_media.twitter.trending_topics.map((topic, i) => (
-                      <Badge key={i} variant="secondary">{topic}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-xl font-bold ${getSentimentColor(sentimentData.social_media.twitter.sentiment.score)}`}>
-                    {(sentimentData.social_media.twitter.sentiment.score * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-gray-400">المشاعر العامة</div>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {sentimentData.nlp_insights.keywords.map((keyword, index) => (
+                    <Badge key={index} variant="outline">
+                      {keyword}
+                    </Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Reddit */}
             <Card className="bg-trading-card border-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-400">
-                  <MessageSquare className="h-5 w-5" />
-                  {lang === 'ar' ? 'تحليل Reddit' : 'Reddit Analysis'}
-                </CardTitle>
+                <CardTitle>{lang === 'ar' ? 'المواضيع' : 'Topics'}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-white">
-                      {sentimentData.social_media.reddit.mentions.toLocaleString()}
+              <CardContent>
+                <div className="space-y-3">
+                  {sentimentData.nlp_insights.topics.map((topic, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm">{topic.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Progress value={topic.weight * 100} className="w-20" />
+                        <span className="text-sm font-bold">{(topic.weight * 100).toFixed(0)}%</span>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">الإشارات</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-white">
-                      {sentimentData.social_media.reddit.engagement.toLocaleString()}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle>{lang === 'ar' ? 'النبرة العاطفية' : 'Emotional Tone'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(sentimentData.nlp_insights.emotional_tone).map(([emotion, value]) => (
+                    <div key={emotion} className="flex justify-between items-center">
+                      <span className="text-sm capitalize">{emotion}</span>
+                      <div className="flex items-center gap-2">
+                        <Progress value={value * 100} className="w-20" />
+                        <span className="text-sm font-bold">{(value * 100).toFixed(0)}%</span>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">التفاعل</div>
-                  </div>
+                  ))}
                 </div>
-                <div>
-                  <div className="text-sm text-gray-400 mb-2">المجتمعات النشطة:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {sentimentData.social_media.reddit.trending_topics.map((topic, i) => (
-                      <Badge key={i} variant="secondary">r/{topic}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-xl font-bold ${getSentimentColor(sentimentData.social_media.reddit.sentiment.score)}`}>
-                    {(sentimentData.social_media.reddit.sentiment.score * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-gray-400">المشاعر العامة</div>
-                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle>{lang === 'ar' ? 'المؤشرات المالية' : 'Financial Indicators'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="bullish" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="bullish">{lang === 'ar' ? 'صعودي' : 'Bullish'}</TabsTrigger>
+                    <TabsTrigger value="bearish">{lang === 'ar' ? 'هبوطي' : 'Bearish'}</TabsTrigger>
+                    <TabsTrigger value="risks">{lang === 'ar' ? 'مخاطر' : 'Risks'}</TabsTrigger>
+                    <TabsTrigger value="opportunities">{lang === 'ar' ? 'فرص' : 'Opportunities'}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="bullish" className="mt-4">
+                    <div className="space-y-2">
+                      {sentimentData.nlp_insights.financial_indicators.bullish_signals.map((signal, index) => (
+                        <div key={index} className="flex items-center gap-2 text-green-400">
+                          <TrendingUp className="h-4 w-4" />
+                          <span className="text-sm">{signal}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="bearish" className="mt-4">
+                    <div className="space-y-2">
+                      {sentimentData.nlp_insights.financial_indicators.bearish_signals.map((signal, index) => (
+                        <div key={index} className="flex items-center gap-2 text-red-400">
+                          <TrendingDown className="h-4 w-4" />
+                          <span className="text-sm">{signal}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="risks" className="mt-4">
+                    <div className="space-y-2">
+                      {sentimentData.nlp_insights.financial_indicators.risk_factors.map((risk, index) => (
+                        <div key={index} className="flex items-center gap-2 text-yellow-400">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm">{risk}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="opportunities" className="mt-4">
+                    <div className="space-y-2">
+                      {sentimentData.nlp_insights.financial_indicators.opportunities.map((opportunity, index) => (
+                        <div key={index} className="flex items-center gap-2 text-blue-400">
+                          <Globe className="h-4 w-4" />
+                          <span className="text-sm">{opportunity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="fear-greed" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* مؤشر الخوف والطمع */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'مؤشر الخوف والطمع' : 'Fear & Greed Index'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <div className="relative">
-                  <div className="text-6xl font-bold text-white mb-2">
-                    {sentimentData.fear_greed_index.value}
-                  </div>
-                  <div className="text-lg text-gray-400">
-                    {sentimentData.fear_greed_index.label}
-                  </div>
-                  <div className={`text-sm mt-2 ${sentimentData.fear_greed_index.change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {sentimentData.fear_greed_index.change_24h >= 0 ? '↗' : '↘'} 
-                    {Math.abs(sentimentData.fear_greed_index.change_24h).toFixed(1)} نقطة (24س)
-                  </div>
-                </div>
-                <Progress value={sentimentData.fear_greed_index.value} className="h-3" />
-              </CardContent>
-            </Card>
-
-            {/* مكونات المؤشر */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'مكونات المؤشر' : 'Index Components'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.entries(sentimentData.fear_greed_index.components).map(([key, value]) => (
-                  <div key={key}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-400 capitalize">
-                        {key.replace('_', ' ')}
-                      </span>
-                      <span className="text-white">{value.toFixed(0)}</span>
-                    </div>
-                    <Progress value={value} className="h-2" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* التاريخ */}
+        <TabsContent value="market-mood" className="space-y-6">
           <Card className="bg-trading-card border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'التطور التاريخي (30 يوم)' : 'Historical Trend (30 Days)'}
-              </CardTitle>
+              <CardTitle>{lang === 'ar' ? 'حالة السوق العامة' : 'Overall Market Mood'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={sentimentData.fear_greed_index.historical}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" domain={[0, 100]} />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #374151',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#F59E0B" 
-                    strokeWidth={2}
-                    dot={{ fill: '#F59E0B', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <h4 className="text-lg font-medium mb-2">{lang === 'ar' ? 'المستثمرون الأفراد' : 'Retail Sentiment'}</h4>
+                  <div 
+                    className="text-2xl font-bold"
+                    style={{ color: getSentimentColor(sentimentData.market_mood.retail_sentiment / 100) }}
+                  >
+                    {sentimentData.market_mood.retail_sentiment.toFixed(0)}
+                  </div>
+                  <Progress value={Math.abs(sentimentData.market_mood.retail_sentiment)} className="mt-2" />
+                </div>
+                
+                <div className="text-center">
+                  <h4 className="text-lg font-medium mb-2">{lang === 'ar' ? 'المؤسسات' : 'Institutional'}</h4>
+                  <div 
+                    className="text-2xl font-bold"
+                    style={{ color: getSentimentColor(sentimentData.market_mood.institutional_sentiment / 100) }}
+                  >
+                    {sentimentData.market_mood.institutional_sentiment.toFixed(0)}
+                  </div>
+                  <Progress value={Math.abs(sentimentData.market_mood.institutional_sentiment)} className="mt-2" />
+                </div>
+                
+                <div className="text-center">
+                  <h4 className="text-lg font-medium mb-2">{lang === 'ar' ? 'المحللون' : 'Analysts'}</h4>
+                  <div 
+                    className="text-2xl font-bold"
+                    style={{ color: getSentimentColor(sentimentData.market_mood.analyst_sentiment / 100) }}
+                  >
+                    {sentimentData.market_mood.analyst_sentiment.toFixed(0)}
+                  </div>
+                  <Progress value={Math.abs(sentimentData.market_mood.analyst_sentiment)} className="mt-2" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle>{lang === 'ar' ? 'المواضيع الرائجة' : 'Trending Topics'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-3">Twitter/X</h4>
+                  <div className="space-y-2">
+                    {sentimentData.social_media.twitter.trending_topics.map((topic, index) => (
+                      <Badge key={index} variant="outline" className="mr-2 mb-2">
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-3">Reddit</h4>
+                  <div className="space-y-2">
+                    {sentimentData.social_media.reddit.trending_topics.map((topic, index) => (
+                      <Badge key={index} variant="outline" className="mr-2 mb-2">
+                        r/{topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="nlp" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* الكلمات المفتاحية */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'الكلمات المفتاحية' : 'Key Words'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {sentimentData.nlp_insights.keywords.map((keyword, i) => (
-                    <Badge key={i} variant="outline">{keyword}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* النبرة العاطفية */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'النبرة العاطفية' : 'Emotional Tone'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.entries(sentimentData.nlp_insights.emotional_tone).map(([emotion, value]) => (
-                  <div key={emotion}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-400 capitalize">{emotion}</span>
-                      <span className="text-white">{(value * 100).toFixed(0)}%</span>
+        <TabsContent value="alerts" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                {lang === 'ar' ? 'تنبيهات المشاعر' : 'Sentiment Alerts'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {sentimentData.alerts.length > 0 ? (
+                  sentimentData.alerts.map((alert, index) => (
+                    <div 
+                      key={index} 
+                      className={`p-4 rounded-lg border-l-4 ${
+                        alert.severity === 'high' ? 'bg-red-900/20 border-red-500' :
+                        alert.severity === 'medium' ? 'bg-yellow-900/20 border-yellow-500' :
+                        'bg-blue-900/20 border-blue-500'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-white">{alert.message}</div>
+                          <div className="text-sm text-gray-400 mt-1">
+                            {new Date(alert.timestamp).toLocaleString()}
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={
+                            alert.severity === 'high' ? 'destructive' :
+                            alert.severity === 'medium' ? 'default' : 'secondary'
+                          }
+                        >
+                          {alert.severity.toUpperCase()}
+                        </Badge>
+                      </div>
                     </div>
-                    <Progress value={value * 100} className="h-2" />
+                  ))
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    {lang === 'ar' ? 'لا توجد تنبيهات حالياً' : 'No alerts currently'}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* المؤشرات المالية */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-400">
-                  <TrendingUp className="h-5 w-5" />
-                  {lang === 'ar' ? 'الإشارات الصاعدة' : 'Bullish Signals'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {sentimentData.nlp_insights.financial_indicators.bullish_signals.map((signal, i) => (
-                    <li key={i} className="text-green-400 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      {signal}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-400">
-                  <TrendingDown className="h-5 w-5" />
-                  {lang === 'ar' ? 'الإشارات الهابطة' : 'Bearish Signals'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {sentimentData.nlp_insights.financial_indicators.bearish_signals.map((signal, i) => (
-                    <li key={i} className="text-red-400 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                      {signal}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

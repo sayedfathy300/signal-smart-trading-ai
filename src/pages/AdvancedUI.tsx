@@ -16,7 +16,7 @@ interface MarketDataPoint {
   price: number;
   volume: number;
   timestamp: number;
-  signal: 'buy' | 'sell' | 'hold';
+  signal: 'BUY' | 'SELL' | 'HOLD';
 }
 
 interface ExportOptions {
@@ -36,11 +36,11 @@ const AdvancedUI = () => {
   const [lang] = useState<'en' | 'ar'>('ar');
 
   const mockData: MarketDataPoint[] = [
-    { name: 'Jan', price: 400, volume: 1200, timestamp: Date.now() - 86400000 * 30, signal: 'buy' },
-    { name: 'Feb', price: 300, volume: 1100, timestamp: Date.now() - 86400000 * 25, signal: 'hold' },
-    { name: 'Mar', price: 600, volume: 1500, timestamp: Date.now() - 86400000 * 20, signal: 'buy' },
-    { name: 'Apr', price: 800, volume: 1800, timestamp: Date.now() - 86400000 * 15, signal: 'sell' },
-    { name: 'May', price: 500, volume: 1300, timestamp: Date.now() - 86400000 * 10, signal: 'hold' },
+    { name: 'Jan', price: 400, volume: 1200, timestamp: Date.now() - 86400000 * 30, signal: 'BUY' },
+    { name: 'Feb', price: 300, volume: 1100, timestamp: Date.now() - 86400000 * 25, signal: 'HOLD' },
+    { name: 'Mar', price: 600, volume: 1500, timestamp: Date.now() - 86400000 * 20, signal: 'BUY' },
+    { name: 'Apr', price: 800, volume: 1800, timestamp: Date.now() - 86400000 * 15, signal: 'SELL' },
+    { name: 'May', price: 500, volume: 1300, timestamp: Date.now() - 86400000 * 10, signal: 'HOLD' },
   ];
 
   const handleExport = (options: ExportOptions) => {
@@ -129,7 +129,13 @@ const AdvancedUI = () => {
         </TabsContent>
 
         <TabsContent value="legacy-export">
-          <AdvancedExport lang={lang} onExport={handleExport} />
+          <AdvancedExport 
+            lang={lang} 
+            onExport={(options) => handleExport({
+              ...options,
+              data: mockData
+            })} 
+          />
         </TabsContent>
       </Tabs>
     </div>
