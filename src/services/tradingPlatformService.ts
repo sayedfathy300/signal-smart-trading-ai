@@ -1,4 +1,3 @@
-
 import ccxt from 'ccxt';
 
 export interface TradingAccount {
@@ -244,13 +243,13 @@ class TradingPlatformService {
       let ExchangeClass;
       switch (exchangeName.toLowerCase()) {
         case 'binance':
-          ExchangeClass = ccxt.binance;
+          ExchangeClass = (await import('ccxt')).binance;
           break;
         case 'coinbase':
-          ExchangeClass = ccxt.coinbasepro;
+          ExchangeClass = (await import('ccxt')).coinbase;
           break;
         case 'kraken':
-          ExchangeClass = ccxt.kraken;
+          ExchangeClass = (await import('ccxt')).kraken;
           break;
         default:
           throw new Error(`منصة غير مدعومة: ${exchangeName}`);

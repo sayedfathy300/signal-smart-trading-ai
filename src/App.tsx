@@ -32,6 +32,7 @@ function App() {
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="trading-bot" element={<TradingBot />} />
             <Route path="trading-platform" element={<TradingPlatform />} />
+            <Route path="high-frequency-trading" element={<HighFrequencyTrading />} />
             <Route path="risk-management" element={<RiskManagement />} />
             <Route path="alternative-data" element={<AlternativeData />} />
             <Route path="ai-models" element={<AIModels />} />

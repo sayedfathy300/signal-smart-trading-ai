@@ -1,4 +1,3 @@
-
 export interface KellyCriterionResult {
   optimalFraction: number;
   expectedReturn: number;
@@ -63,6 +62,7 @@ export interface RiskManagementMetrics {
   informationRatio: number;
   calmarRatio: number;
   sortinoRatio: number;
+  sharpeRatio: number;
 }
 
 class RiskManagementService {
@@ -492,6 +492,7 @@ class RiskManagementService {
     const informationRatio = (portfolioReturn - 0.1) / 0.05; // مقارنة بمؤشر محاكي
     const calmarRatio = portfolioReturn / 0.15; // مقارنة بأقصى انخفاض محاكي
     const sortinoRatio = (portfolioReturn - riskFreeRate) / downSideVolatility;
+    const sharpeRatio = (portfolioReturn - riskFreeRate) / portfolioVolatility;
 
     return {
       totalRisk,
@@ -503,7 +504,8 @@ class RiskManagementService {
       riskAdjustedReturn,
       informationRatio,
       calmarRatio,
-      sortinoRatio
+      sortinoRatio,
+      sharpeRatio
     };
   }
 

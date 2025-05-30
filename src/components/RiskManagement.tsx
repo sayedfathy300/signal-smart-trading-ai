@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -203,7 +202,7 @@ const RiskManagement = ({ lang = 'ar' }: RiskManagementProps) => {
                 <TrendingUp className="h-8 w-8 text-trading-up" />
                 <div>
                   <div className="text-lg font-bold text-white">
-                    {riskMetrics.sharpeRatio?.toFixed(2)}
+                    {(riskMetrics.sharpeRatio || 0).toFixed(2)}
                   </div>
                   <div className="text-sm text-gray-400">نسبة شارب</div>
                 </div>
