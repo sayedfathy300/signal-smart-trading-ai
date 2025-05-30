@@ -5,30 +5,42 @@ import ThreeDVisualization from '@/components/advanced-ui/ThreeDVisualization';
 import VoiceControl from '@/components/advanced-ui/VoiceControl';
 import DragDropCustomization from '@/components/advanced-ui/DragDropCustomization';
 import AdvancedExport from '@/components/advanced-ui/AdvancedExport';
-import { Box, Mic, MousePointer, Download } from 'lucide-react';
+import PatternRecognitionUI from '@/components/ui/pattern-recognition/PatternRecognitionUI';
+import ChartExporter from '@/components/ui/export/ChartExporter';
+import ReportExporter from '@/components/ui/export/ReportExporter';
+import BloombergTerminalTheme from '@/components/ui/design/BloombergTerminalTheme';
+import { Box, Mic, MousePointer, Download, Eye, FileImage, FileText, Monitor } from 'lucide-react';
 
 interface MarketDataPoint {
   name: string;
   price: number;
   volume: number;
-  timestamp: string;
+  timestamp: number;
   signal: 'buy' | 'sell' | 'hold';
 }
 
 interface ExportOptions {
   format: string;
   data: any;
+  includeCharts: boolean;
+  includeStats: boolean;
+  includePortfolio: boolean;
+  includeTrades: boolean;
+  includeAnalysis: boolean;
+  dateRange: string;
+  chartResolution: string;
+  language: string;
 }
 
 const AdvancedUI = () => {
   const [lang] = useState<'en' | 'ar'>('ar');
 
   const mockData: MarketDataPoint[] = [
-    { name: 'Jan', price: 400, volume: 1200, timestamp: '2024-01-01', signal: 'buy' },
-    { name: 'Feb', price: 300, volume: 1100, timestamp: '2024-02-01', signal: 'hold' },
-    { name: 'Mar', price: 600, volume: 1500, timestamp: '2024-03-01', signal: 'buy' },
-    { name: 'Apr', price: 800, volume: 1800, timestamp: '2024-04-01', signal: 'sell' },
-    { name: 'May', price: 500, volume: 1300, timestamp: '2024-05-01', signal: 'hold' },
+    { name: 'Jan', price: 400, volume: 1200, timestamp: Date.now() - 86400000 * 30, signal: 'buy' },
+    { name: 'Feb', price: 300, volume: 1100, timestamp: Date.now() - 86400000 * 25, signal: 'hold' },
+    { name: 'Mar', price: 600, volume: 1500, timestamp: Date.now() - 86400000 * 20, signal: 'buy' },
+    { name: 'Apr', price: 800, volume: 1800, timestamp: Date.now() - 86400000 * 15, signal: 'sell' },
+    { name: 'May', price: 500, volume: 1300, timestamp: Date.now() - 86400000 * 10, signal: 'hold' },
   ];
 
   const handleExport = (options: ExportOptions) => {
@@ -41,34 +53,50 @@ const AdvancedUI = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">
-            {lang === 'ar' ? 'الواجهة المتقدمة' : 'Advanced UI'}
+            {lang === 'ar' ? 'الواجهة المتقدمة الكاملة' : 'Complete Advanced UI Suite'}
           </h1>
           <p className="text-gray-400">
             {lang === 'ar' 
-              ? 'تجربة تفاعلية متطورة مع تقنيات حديثة'
-              : 'Advanced interactive experience with modern technologies'}
+              ? 'مجموعة شاملة من أدوات الواجهة المتقدمة مع التصور ثلاثي الأبعاد والتحكم الصوتي والتصدير المتقدم'
+              : 'Complete suite of advanced UI tools with 3D visualization, voice control, and advanced export'}
           </p>
         </div>
       </div>
 
       {/* Main Tabs */}
       <Tabs defaultValue="3d-visualization" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
-          <TabsTrigger value="3d-visualization" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-8 bg-trading-card">
+          <TabsTrigger value="3d-visualization" className="flex items-center gap-2 text-xs">
             <Box className="h-4 w-4" />
-            {lang === 'ar' ? 'التصور ثلاثي الأبعاد' : '3D Visualization'}
+            {lang === 'ar' ? 'التصور 3D' : '3D Viz'}
           </TabsTrigger>
-          <TabsTrigger value="voice-control" className="flex items-center gap-2">
+          <TabsTrigger value="voice-control" className="flex items-center gap-2 text-xs">
             <Mic className="h-4 w-4" />
-            {lang === 'ar' ? 'التحكم الصوتي' : 'Voice Control'}
+            {lang === 'ar' ? 'التحكم الصوتي' : 'Voice'}
           </TabsTrigger>
-          <TabsTrigger value="customization" className="flex items-center gap-2">
+          <TabsTrigger value="customization" className="flex items-center gap-2 text-xs">
             <MousePointer className="h-4 w-4" />
-            {lang === 'ar' ? 'التخصيص' : 'Customization'}
+            {lang === 'ar' ? 'التخصيص' : 'Custom'}
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex items-center gap-2">
+          <TabsTrigger value="pattern-recognition" className="flex items-center gap-2 text-xs">
+            <Eye className="h-4 w-4" />
+            {lang === 'ar' ? 'الأنماط' : 'Patterns'}
+          </TabsTrigger>
+          <TabsTrigger value="chart-export" className="flex items-center gap-2 text-xs">
+            <FileImage className="h-4 w-4" />
+            {lang === 'ar' ? 'تصدير الرسوم' : 'Chart Export'}
+          </TabsTrigger>
+          <TabsTrigger value="report-export" className="flex items-center gap-2 text-xs">
+            <FileText className="h-4 w-4" />
+            {lang === 'ar' ? 'تصدير التقارير' : 'Reports'}
+          </TabsTrigger>
+          <TabsTrigger value="bloomberg-theme" className="flex items-center gap-2 text-xs">
+            <Monitor className="h-4 w-4" />
+            {lang === 'ar' ? 'تصميم بلومبرغ' : 'Bloomberg'}
+          </TabsTrigger>
+          <TabsTrigger value="legacy-export" className="flex items-center gap-2 text-xs">
             <Download className="h-4 w-4" />
-            {lang === 'ar' ? 'التصدير المتقدم' : 'Advanced Export'}
+            {lang === 'ar' ? 'المتقدم القديم' : 'Legacy'}
           </TabsTrigger>
         </TabsList>
 
@@ -84,7 +112,23 @@ const AdvancedUI = () => {
           <DragDropCustomization lang={lang} />
         </TabsContent>
 
-        <TabsContent value="export">
+        <TabsContent value="pattern-recognition">
+          <PatternRecognitionUI lang={lang} data={mockData} />
+        </TabsContent>
+
+        <TabsContent value="chart-export">
+          <ChartExporter lang={lang} chartTitle="Trading Chart Analysis" />
+        </TabsContent>
+
+        <TabsContent value="report-export">
+          <ReportExporter lang={lang} />
+        </TabsContent>
+
+        <TabsContent value="bloomberg-theme">
+          <BloombergTerminalTheme lang={lang} />
+        </TabsContent>
+
+        <TabsContent value="legacy-export">
           <AdvancedExport lang={lang} onExport={handleExport} />
         </TabsContent>
       </Tabs>

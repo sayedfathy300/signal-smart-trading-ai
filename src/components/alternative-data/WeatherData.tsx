@@ -1,845 +1,477 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  ScatterChart,
-  Scatter
-} from 'recharts';
-import { 
-  Cloud, 
-  CloudRain, 
-  Sun, 
-  Snowflake, 
-  Wind, 
-  Thermometer, 
-  Droplets,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  MapPin,
-  Clock,
-  Zap
-} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { Cloud, Sun, CloudRain, Snowflake, Wind, Thermometer, Droplets, Eye, TrendingUp, TrendingDown, MapPin, Calendar } from 'lucide-react';
 
-interface WeatherDataProps {
-  lang?: 'en' | 'ar';
-}
-
-interface WeatherMetrics {
+interface WeatherData {
+  location: string;
+  date: string;
   temperature: number;
   humidity: number;
   precipitation: number;
   windSpeed: number;
+  condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'windy';
   pressure: number;
-  condition: 'sunny' | 'cloudy' | 'rainy' | 'stormy';
-}
-
-interface CommodityWeatherCorrelation {
+  visibility: number;
   commodity: string;
-  symbol: string;
-  correlation: number;
-  impact: 'high' | 'medium' | 'low';
-  weatherFactors: string[];
-  priceChange: number;
-  forecast: 'bullish' | 'bearish' | 'neutral';
+  priceImpact: number;
 }
 
-interface RegionWeatherData {
-  region: string;
-  country: string;
-  coordinates: { lat: number; lng: number };
-  weather: WeatherMetrics;
-  cropConditions: {
-    corn: number;
-    wheat: number;
-    soybeans: number;
-    rice: number;
-  };
-  agriculturalIndex: number;
-  alerts: string[];
+interface WeatherDataProps {
+  lang: 'en' | 'ar';
 }
 
-const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
-  const [weatherData, setWeatherData] = useState<RegionWeatherData[]>([]);
-  const [correlations, setCorrelations] = useState<CommodityWeatherCorrelation[]>([]);
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState<string>('midwest-usa');
+const WeatherData: React.FC<WeatherDataProps> = ({ lang }) => {
+  const [selectedRegion, setSelectedRegion] = useState<string>('global');
+  const [selectedCommodity, setSelectedCommodity] = useState<string>('all');
+  const [timeframe, setTimeframe] = useState<string>('week');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // محاكاة بيانات الطقس الفعلية
-    setWeatherData([
-      {
-        region: 'Midwest USA',
-        country: 'USA',
-        coordinates: { lat: 41.8781, lng: -87.6298 },
-        weather: {
-          temperature: 22,
-          humidity: 65,
-          precipitation: 2.5,
-          windSpeed: 15,
-          pressure: 1013,
-          condition: 'cloudy'
-        },
-        cropConditions: {
-          corn: 85,
-          wheat: 78,
-          soybeans: 82,
-          rice: 0
-        },
-        agriculturalIndex: 81.7,
-        alerts: ['احتمال هطول أمطار غزيرة خلال 48 ساعة']
-      },
-      {
-        region: 'Brazilian Cerrado',
-        country: 'Brazil',
-        coordinates: { lat: -15.7801, lng: -47.9292 },
-        weather: {
-          temperature: 28,
-          humidity: 78,
-          precipitation: 5.2,
-          windSpeed: 12,
-          pressure: 1008,
-          condition: 'rainy'
-        },
-        cropConditions: {
-          corn: 92,
-          wheat: 45,
-          soybeans: 89,
-          rice: 72
-        },
-        agriculturalIndex: 74.5,
-        alerts: ['موسم الأمطار الموسمية مثالي للصويا']
-      },
-      {
-        region: 'European Plains',
-        country: 'France',
-        coordinates: { lat: 46.2276, lng: 2.2137 },
-        weather: {
-          temperature: 18,
-          humidity: 72,
-          precipitation: 1.8,
-          windSpeed: 18,
-          pressure: 1015,
-          condition: 'cloudy'
-        },
-        cropConditions: {
-          corn: 79,
-          wheat: 88,
-          soybeans: 75,
-          rice: 0
-        },
-        agriculturalIndex: 80.7,
-        alerts: ['ظروف مثالية لنمو القمح']
-      }
-    ]);
-
-    setCorrelations([
-      {
-        commodity: 'الذرة',
-        symbol: 'CORN',
-        correlation: 0.78,
-        impact: 'high',
-        weatherFactors: ['درجة الحرارة', 'هطول الأمطار', 'الرطوبة'],
-        priceChange: 2.5,
-        forecast: 'bullish'
-      },
-      {
-        commodity: 'القمح',
-        symbol: 'WHEAT',
-        correlation: 0.82,
-        impact: 'high',
-        weatherFactors: ['هطول الأمطار', 'درجة الحرارة', 'الرياح'],
-        priceChange: 1.8,
-        forecast: 'neutral'
-      },
-      {
-        commodity: 'فول الصويا',
-        symbol: 'SOYBEANS',
-        correlation: 0.75,
-        impact: 'high',
-        weatherFactors: ['الرطوبة', 'هطول الأمطار', 'درجة الحرارة'],
-        priceChange: 3.2,
-        forecast: 'bullish'
-      },
-      {
-        commodity: 'البن',
-        symbol: 'COFFEE',
-        correlation: 0.68,
-        impact: 'medium',
-        weatherFactors: ['درجة الحرارة', 'الصقيع', 'هطول الأمطار'],
-        priceChange: -1.5,
-        forecast: 'bearish'
-      }
-    ]);
-
-    // بيانات تاريخية للارتباط
-    setHistoricalData([
-      { date: '2024-01', temperature: 18, cornPrice: 420, wheatPrice: 650, soybeansPrice: 1250 },
-      { date: '2024-02', temperature: 20, cornPrice: 435, wheatPrice: 668, soybeansPrice: 1280 },
-      { date: '2024-03', temperature: 22, cornPrice: 445, wheatPrice: 675, soybeansPrice: 1320 },
-      { date: '2024-04', temperature: 25, cornPrice: 430, wheatPrice: 660, soybeansPrice: 1290 },
-      { date: '2024-05', temperature: 28, cornPrice: 425, wheatPrice: 645, soybeansPrice: 1270 },
-      { date: '2024-06', temperature: 32, cornPrice: 410, wheatPrice: 630, soybeansPrice: 1240 }
-    ]);
+  // Generate mock weather data
+  const weatherData: WeatherData[] = useMemo(() => {
+    const locations = ['Iowa, USA', 'São Paulo, Brazil', 'Punjab, India', 'Alberta, Canada', 'Queensland, Australia', 'Ukraine', 'Russia', 'Argentina'];
+    const commodities = ['Corn', 'Soybeans', 'Wheat', 'Coffee', 'Sugar', 'Cotton', 'Rice', 'Cocoa'];
+    const conditions: WeatherData['condition'][] = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
+    
+    return Array.from({ length: 100 }, (_, i) => {
+      const location = locations[Math.floor(Math.random() * locations.length)];
+      const commodity = commodities[Math.floor(Math.random() * commodities.length)];
+      const condition = conditions[Math.floor(Math.random() * conditions.length)];
+      const temperature = Math.floor(Math.random() * 60) - 10;
+      const precipitation = Math.random() * 50;
+      
+      return {
+        location,
+        date: new Date(Date.now() - Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        temperature,
+        humidity: Math.floor(Math.random() * 100),
+        precipitation,
+        windSpeed: Math.floor(Math.random() * 30),
+        condition,
+        pressure: Math.floor(Math.random() * 50) + 980,
+        visibility: Math.floor(Math.random() * 20) + 1,
+        commodity,
+        priceImpact: (precipitation > 25 || temperature > 35 || temperature < 5) ? 
+          Math.random() * 15 - 7.5 : Math.random() * 5 - 2.5
+      };
+    });
   }, []);
 
-  const getWeatherIcon = (condition: string) => {
+  // Helper function to get weather icon
+  const getForecastIcon = (condition: string, size = 'h-5 w-5') => {
     switch (condition) {
-      case 'sunny':
-        return <Sun className="h-5 w-5 text-yellow-400" />;
-      case 'rainy':
-        return <CloudRain className="h-5 w-5 text-blue-400" />;
-      case 'cloudy':
-        return <Cloud className="h-5 w-5 text-gray-400" />;
-      case 'snowy':
-        return <Snowflake className="h-5 w-5 text-blue-300" />;
-      case 'windy':
-        return <Wind className="h-5 w-5 text-green-400" />;
-      default:
-        return <Cloud className="h-5 w-5 text-gray-400" />;
+      case 'sunny': return <Sun className={`${size} text-yellow-500`} />;
+      case 'cloudy': return <Cloud className={`${size} text-gray-400`} />;
+      case 'rainy': return <CloudRain className={`${size} text-blue-500`} />;
+      case 'snowy': return <Snowflake className={`${size} text-blue-200`} />;
+      case 'windy': return <Wind className={`${size} text-green-400`} />;
+      default: return <Sun className={`${size} text-yellow-500`} />;
     }
   };
 
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'high':
-        return 'text-red-400';
-      case 'medium':
-        return 'text-yellow-400';
-      case 'low':
-        return 'text-green-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
+  // Filter data based on selections
+  const filteredData = useMemo(() => {
+    return weatherData.filter(item => {
+      if (selectedRegion !== 'global' && !item.location.includes(selectedRegion)) return false;
+      if (selectedCommodity !== 'all' && item.commodity !== selectedCommodity) return false;
+      return true;
+    });
+  }, [weatherData, selectedRegion, selectedCommodity]);
 
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'high':
-        return 'bg-red-600';
-      case 'medium':
-        return 'bg-yellow-600';
-      case 'low':
-        return 'bg-green-600';
-      default:
-        return 'bg-gray-600';
-    }
-  };
+  // Prepare regional analysis
+  const regionalAnalysis = useMemo(() => {
+    const regions = filteredData.reduce((acc, item) => {
+      const region = item.location;
+      if (!acc[region]) {
+        acc[region] = {
+          region,
+          avgTemp: 0,
+          totalPrecipitation: 0,
+          avgPriceImpact: 0,
+          count: 0,
+          dominantCondition: 'sunny' as WeatherData['condition']
+        };
+      }
+      acc[region].avgTemp += item.temperature;
+      acc[region].totalPrecipitation += item.precipitation;
+      acc[region].avgPriceImpact += item.priceImpact;
+      acc[region].count++;
+      return acc;
+    }, {} as Record<string, any>);
 
-  const formatArabicNumber = (num: number | string) => {
-    // Convert string to number if needed
-    const numberValue = typeof num === 'string' ? parseFloat(num) : num;
-    return numberValue.toLocaleString('ar-EG');
-  };
+    return Object.values(regions).map((region: any) => ({
+      ...region,
+      avgTemp: Math.round(region.avgTemp / region.count),
+      avgPrecipitation: Math.round(region.totalPrecipitation / region.count),
+      avgPriceImpact: Math.round((region.avgPriceImpact / region.count) * 100) / 100
+    }));
+  }, [filteredData]);
+
+  // Prepare time series data
+  const timeSeriesData = useMemo(() => {
+    const dateGroups = filteredData.reduce((acc, item) => {
+      if (!acc[item.date]) {
+        acc[item.date] = {
+          date: item.date,
+          avgTemp: 0,
+          avgPrecipitation: 0,
+          avgPriceImpact: 0,
+          count: 0
+        };
+      }
+      acc[item.date].avgTemp += item.temperature;
+      acc[item.date].avgPrecipitation += item.precipitation;
+      acc[item.date].avgPriceImpact += item.priceImpact;
+      acc[item.date].count++;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(dateGroups).map((group: any) => ({
+      date: group.date,
+      avgTemp: Math.round(group.avgTemp / group.count),
+      avgPrecipitation: Math.round(group.avgPrecipitation / group.count),
+      avgPriceImpact: Math.round((group.avgPriceImpact / group.count) * 100) / 100
+    })).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  }, [filteredData]);
+
+  // Prepare commodity impact analysis
+  const commodityImpact = useMemo(() => {
+    const impact = filteredData.reduce((acc, item) => {
+      if (!acc[item.commodity]) {
+        acc[item.commodity] = {
+          commodity: item.commodity,
+          totalImpact: 0,
+          positiveEvents: 0,
+          negativeEvents: 0,
+          count: 0
+        };
+      }
+      acc[item.commodity].totalImpact += item.priceImpact;
+      if (item.priceImpact > 0) acc[item.commodity].positiveEvents++;
+      if (item.priceImpact < 0) acc[item.commodity].negativeEvents++;
+      acc[item.commodity].count++;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(impact).map((item: any) => ({
+      ...item,
+      avgImpact: Math.round((item.totalImpact / item.count) * 100) / 100,
+      volatility: Math.round(((item.positiveEvents + item.negativeEvents) / item.count) * 100)
+    }));
+  }, [filteredData]);
+
+  // Prepare weather alerts
+  const weatherAlerts = useMemo(() => {
+    return filteredData.filter(item => 
+      item.precipitation > 30 || 
+      item.temperature > 40 || 
+      item.temperature < -5 || 
+      item.windSpeed > 25 ||
+      Math.abs(item.priceImpact) > 5
+    ).slice(0, 10);
+  }, [filteredData]);
+
+  const regions = ['global', 'USA', 'Brazil', 'India', 'Canada', 'Australia', 'Ukraine', 'Russia', 'Argentina'];
+  const commodities = ['all', 'Corn', 'Soybeans', 'Wheat', 'Coffee', 'Sugar', 'Cotton', 'Rice', 'Cocoa'];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Cloud className="h-6 w-6 text-blue-400" />
+      {/* Header & Controls */}
+      <Card className="bg-trading-card border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Cloud className="h-5 w-5 text-blue-400" />
             {lang === 'ar' ? 'بيانات الطقس للسلع' : 'Weather Data for Commodities'}
-          </h2>
-          <p className="text-gray-400">
-            {lang === 'ar' 
-              ? 'تحليل تأثير الطقس على أسعار السلع الزراعية والطاقة'
-              : 'Analyze weather impact on agricultural and energy commodity prices'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className="bg-blue-600">
-            {lang === 'ar' ? 'بيانات حية' : 'Live Data'}
-          </Badge>
-          <Badge variant="outline" className="border-green-500 text-green-400">
-            {lang === 'ar' ? 'محدث كل ساعة' : 'Hourly Updates'}
-          </Badge>
-        </div>
-      </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger>
+                <SelectValue placeholder={lang === 'ar' ? 'اختر المنطقة' : 'Select Region'} />
+              </SelectTrigger>
+              <SelectContent>
+                {regions.map(region => (
+                  <SelectItem key={region} value={region}>
+                    {region === 'global' ? (lang === 'ar' ? 'عالمي' : 'Global') : region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      {/* Regional Selection */}
-      <div className="flex gap-4">
-        <Select defaultValue="global">
-          <SelectTrigger className="w-48 bg-trading-card border-gray-600 text-white">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-trading-card border-gray-600">
-            <SelectItem value="global">
-              {lang === 'ar' ? 'عالمي' : 'Global'}
-            </SelectItem>
-            <SelectItem value="north-america">
-              {lang === 'ar' ? 'أمريكا الشمالية' : 'North America'}
-            </SelectItem>
-            <SelectItem value="europe">
-              {lang === 'ar' ? 'أوروبا' : 'Europe'}
-            </SelectItem>
-            <SelectItem value="asia">
-              {lang === 'ar' ? 'آسيا' : 'Asia'}
-            </SelectItem>
-            <SelectItem value="south-america">
-              {lang === 'ar' ? 'أمريكا الجنوبية' : 'South America'}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+            <Select value={selectedCommodity} onValueChange={setSelectedCommodity}>
+              <SelectTrigger>
+                <SelectValue placeholder={lang === 'ar' ? 'اختر السلعة' : 'Select Commodity'} />
+              </SelectTrigger>
+              <SelectContent>
+                {commodities.map(commodity => (
+                  <SelectItem key={commodity} value={commodity}>
+                    {commodity === 'all' ? (lang === 'ar' ? 'جميع السلع' : 'All Commodities') : commodity}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select defaultValue="all-commodities">
-          <SelectTrigger className="w-48 bg-trading-card border-gray-600 text-white">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-trading-card border-gray-600">
-            <SelectItem value="all-commodities">
-              {lang === 'ar' ? 'جميع السلع' : 'All Commodities'}
-            </SelectItem>
-            <SelectItem value="agriculture">
-              {lang === 'ar' ? 'زراعية' : 'Agriculture'}
-            </SelectItem>
-            <SelectItem value="energy">
-              {lang === 'ar' ? 'طاقة' : 'Energy'}
-            </SelectItem>
-            <SelectItem value="metals">
-              {lang === 'ar' ? 'معادن' : 'Metals'}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <Select value={timeframe} onValueChange={setTimeframe}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">{lang === 'ar' ? 'يوم' : 'Day'}</SelectItem>
+                <SelectItem value="week">{lang === 'ar' ? 'أسبوع' : 'Week'}</SelectItem>
+                <SelectItem value="month">{lang === 'ar' ? 'شهر' : 'Month'}</SelectItem>
+              </SelectContent>
+            </Select>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-trading-card">
-          <TabsTrigger value="overview">
-            {lang === 'ar' ? 'نظرة عامة' : 'Overview'}
-          </TabsTrigger>
-          <TabsTrigger value="current">
-            {lang === 'ar' ? 'الحالة الحالية' : 'Current Conditions'}
-          </TabsTrigger>
-          <TabsTrigger value="forecast">
-            {lang === 'ar' ? 'التوقعات' : 'Forecast'}
-          </TabsTrigger>
-          <TabsTrigger value="impact">
-            {lang === 'ar' ? 'تحليل التأثير' : 'Impact Analysis'}
-          </TabsTrigger>
-          <TabsTrigger value="alerts">
-            {lang === 'ar' ? 'التنبيهات' : 'Alerts'}
-          </TabsTrigger>
-        </TabsList>
+            <Button 
+              onClick={() => setLoading(!loading)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Cloud className="h-4 w-4 mr-2" />
+              {lang === 'ar' ? 'تحديث' : 'Update'}
+            </Button>
+          </div>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Weather-Commodity Correlations Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {correlations.map((correlation, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-white">{correlation.commodity}</h4>
-                    {getForecastIcon(correlation.forecast)}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400 text-sm">
-                        {lang === 'ar' ? 'الارتباط' : 'Correlation'}
-                      </span>
-                      <span className="text-white font-medium">
-                        {(correlation.correlation * 100).toFixed(1)}%
-                      </span>
+          {/* Key Weather Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gray-800 p-4 rounded-lg text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Thermometer className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {Math.round(filteredData.reduce((sum, item) => sum + item.temperature, 0) / filteredData.length) || 0}°C
+              </div>
+              <div className="text-sm text-gray-400">{lang === 'ar' ? 'متوسط الحرارة' : 'Avg Temperature'}</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg text-center">
+              <div className="flex items-center justify-center mb-2">
+                <CloudRain className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {Math.round(filteredData.reduce((sum, item) => sum + item.precipitation, 0) / filteredData.length) || 0}mm
+              </div>
+              <div className="text-sm text-gray-400">{lang === 'ar' ? 'متوسط الأمطار' : 'Avg Precipitation'}</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Wind className="h-5 w-5 text-green-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {Math.round(filteredData.reduce((sum, item) => sum + item.windSpeed, 0) / filteredData.length) || 0} km/h
+              </div>
+              <div className="text-sm text-gray-400">{lang === 'ar' ? 'متوسط الرياح' : 'Avg Wind'}</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg text-center">
+              <div className="flex items-center justify-center mb-2">
+                <TrendingUp className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="text-2xl font-bold text-white">
+                {(filteredData.reduce((sum, item) => sum + Math.abs(item.priceImpact), 0) / filteredData.length).toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-400">{lang === 'ar' ? 'تأثير السعر' : 'Price Impact'}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Weather Alerts */}
+      {weatherAlerts.length > 0 && (
+        <Card className="bg-gradient-to-r from-yellow-900/20 to-red-900/20 border-yellow-500/30">
+          <CardHeader>
+            <CardTitle className="text-yellow-400 flex items-center gap-2">
+              <CloudRain className="h-5 w-5" />
+              {lang === 'ar' ? 'تنبيهات الطقس' : 'Weather Alerts'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {weatherAlerts.slice(0, 4).map((alert, index) => (
+                <div key={index} className="bg-gray-800/50 p-3 rounded-lg border border-yellow-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getForecastIcon(alert.condition)}
+                      <span className="text-white font-medium">{alert.location}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400 text-sm">
-                        {lang === 'ar' ? 'التغيير' : 'Change'}
-                      </span>
-                      <span className={correlation.priceChange >= 0 ? 'text-green-400' : 'text-red-400'}>
-                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
-                      </span>
-                    </div>
-                    <Badge 
-                      variant="outline" 
-                      className={
-                        correlation.impact === 'high' ? 'border-red-500 text-red-400' :
-                        correlation.impact === 'medium' ? 'border-yellow-500 text-yellow-400' :
-                        'border-green-500 text-green-400'
-                      }
-                    >
-                      {lang === 'ar' ? 
-                        (correlation.impact === 'high' ? 'تأثير عالي' :
-                         correlation.impact === 'medium' ? 'تأثير متوسط' : 'تأثير منخفض') :
-                        correlation.impact + ' impact'}
+                    <Badge className={`${Math.abs(alert.priceImpact) > 5 ? 'bg-red-500' : 'bg-yellow-500'} text-white`}>
+                      {alert.priceImpact > 0 ? '+' : ''}{alert.priceImpact.toFixed(1)}%
                     </Badge>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    {alert.temperature}°C, {alert.precipitation.toFixed(1)}mm, {alert.windSpeed}km/h
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Historical Weather-Price Correlation Chart */}
-          <Card className="bg-trading-card border-gray-700">
+      {/* Analysis Tabs */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid grid-cols-4 bg-trading-card">
+          <TabsTrigger value="overview">{lang === 'ar' ? 'نظرة عامة' : 'Overview'}</TabsTrigger>
+          <TabsTrigger value="regional">{lang === 'ar' ? 'تحليل إقليمي' : 'Regional'}</TabsTrigger>
+          <TabsTrigger value="trends">{lang === 'ar' ? 'الاتجاهات' : 'Trends'}</TabsTrigger>
+          <TabsTrigger value="impact">{lang === 'ar' ? 'تأثير السلع' : 'Commodity Impact'}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white">{lang === 'ar' ? 'درجة الحرارة مقابل تأثير السعر' : 'Temperature vs Price Impact'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timeSeriesData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="date" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #374151',
+                          borderRadius: '6px',
+                          color: '#F3F4F6'
+                        }}
+                      />
+                      <Area type="monotone" dataKey="avgTemp" stackId="1" stroke="#EF4444" fill="#EF4444" fillOpacity={0.6} />
+                      <Area type="monotone" dataKey="avgPriceImpact" stackId="2" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white">{lang === 'ar' ? 'هطول الأمطار والرياح' : 'Precipitation & Wind'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timeSeriesData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="date" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #374151',
+                          borderRadius: '6px',
+                          color: '#F3F4F6'
+                        }}
+                      />
+                      <Area type="monotone" dataKey="avgPrecipitation" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="regional">
+          <Card className="bg-trading-card border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'ارتباط الطقس بالأسعار التاريخي' : 'Historical Weather-Price Correlation'}
-              </CardTitle>
+              <CardTitle className="text-white">{lang === 'ar' ? 'التحليل الإقليمي' : 'Regional Analysis'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={historicalData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" />
-                  <YAxis yAxisId="temp" orientation="left" stroke="#F59E0B" />
-                  <YAxis yAxisId="price" orientation="right" stroke="#10B981" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                  <Line
-                    yAxisId="temp"
-                    type="monotone"
-                    dataKey="temperature"
-                    stroke="#F59E0B"
-                    strokeWidth={3}
-                    name={lang === 'ar' ? 'درجة الحرارة (°C)' : 'Temperature (°C)'}
-                  />
-                  <Line
-                    yAxisId="price"
-                    type="monotone"
-                    dataKey="cornPrice"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    name={lang === 'ar' ? 'سعر الذرة' : 'Corn Price'}
-                  />
-                  <Line
-                    yAxisId="price"
-                    type="monotone"
-                    dataKey="wheatPrice"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    name={lang === 'ar' ? 'سعر القمح' : 'Wheat Price'}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={regionalAnalysis}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="region" stroke="#9CA3AF" angle={-45} textAnchor="end" height={100} />
+                    <YAxis stroke="#9CA3AF" />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '6px',
+                        color: '#F3F4F6'
+                      }}
+                    />
+                    <Bar dataKey="avgTemp" fill="#EF4444" />
+                    <Bar dataKey="avgPrecipitation" fill="#3B82F6" />
+                    <Bar dataKey="avgPriceImpact" fill="#10B981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Current Conditions Tab */}
-        <TabsContent value="current" className="space-y-6">
-          {/* Current Weather Data */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {weatherData.map((region, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5" />
-                      {region.region}
-                    </div>
-                    {getWeatherIcon(region.weather.condition)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Weather Metrics */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Thermometer className="h-4 w-4 text-orange-400" />
-                        <div>
-                          <p className="text-xs text-gray-400">
-                            {lang === 'ar' ? 'درجة الحرارة' : 'Temperature'}
-                          </p>
-                          <p className="text-white font-semibold">
-                            {formatArabicNumber(region.weather.temperature)}°C
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Droplets className="h-4 w-4 text-blue-400" />
-                        <div>
-                          <p className="text-xs text-gray-400">
-                            {lang === 'ar' ? 'الرطوبة' : 'Humidity'}
-                          </p>
-                          <p className="text-white font-semibold">
-                            {formatArabicNumber(region.weather.humidity)}%
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <CloudRain className="h-4 w-4 text-blue-400" />
-                        <div>
-                          <p className="text-xs text-gray-400">
-                            {lang === 'ar' ? 'هطول الأمطار' : 'Precipitation'}
-                          </p>
-                          <p className="text-white font-semibold">
-                            {formatArabicNumber(region.weather.precipitation)}mm
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Wind className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-400">
-                            {lang === 'ar' ? 'سرعة الرياح' : 'Wind Speed'}
-                          </p>
-                          <p className="text-white font-semibold">
-                            {formatArabicNumber(region.weather.windSpeed)} km/h
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+        <TabsContent value="trends">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white">{lang === 'ar' ? 'اتجاهات الطقس' : 'Weather Trends'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={timeSeriesData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="date" stroke="#9CA3AF" />
+                    <YAxis stroke="#9CA3AF" />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '6px',
+                        color: '#F3F4F6'
+                      }}
+                    />
+                    <Line type="monotone" dataKey="avgTemp" stroke="#EF4444" strokeWidth={2} />
+                    <Line type="monotone" dataKey="avgPrecipitation" stroke="#3B82F6" strokeWidth={2} />
+                    <Line type="monotone" dataKey="avgPriceImpact" stroke="#10B981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-                    {/* Agricultural Index */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-400">
-                          {lang === 'ar' ? 'المؤشر الزراعي' : 'Agricultural Index'}
-                        </span>
-                        <span className="text-white font-semibold">
-                          {formatArabicNumber(region.agriculturalIndex.toFixed(1))}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            region.agriculturalIndex > 80 ? 'bg-green-500' :
-                            region.agriculturalIndex > 60 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${region.agriculturalIndex}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Crop Conditions */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-300 mb-2">
-                        {lang === 'ar' ? 'حالة المحاصيل' : 'Crop Conditions'}
-                      </h4>
-                      <div className="space-y-2">
-                        {Object.entries(region.cropConditions).map(([crop, condition]) => (
-                          condition > 0 && (
-                            <div key={crop} className="flex justify-between items-center">
-                              <span className="text-gray-400 text-sm capitalize">{crop}</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-700 rounded-full h-1">
-                                  <div
-                                    className={`h-1 rounded-full ${
-                                      condition > 80 ? 'bg-green-500' :
-                                      condition > 60 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${condition}%` }}
-                                  />
-                                </div>
-                                <span className="text-white text-sm w-8">
-                                  {formatArabicNumber(condition)}%
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Alerts */}
-                    {region.alerts.length > 0 && (
+        <TabsContent value="impact">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white">{lang === 'ar' ? 'تأثير الطقس على السلع' : 'Weather Impact on Commodities'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {commodityImpact.map((item, index) => (
+                  <div key={index} className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-2">
-                          {lang === 'ar' ? 'التنبيهات' : 'Alerts'}
-                        </h4>
-                        {region.alerts.map((alert, idx) => (
-                          <div key={idx} className="flex items-start gap-2 p-2 bg-yellow-900/30 rounded border border-yellow-700">
-                            <AlertTriangle className="h-4 w-4 text-yellow-400 mt-0.5" />
-                            <p className="text-yellow-300 text-sm">{alert}</p>
-                          </div>
-                        ))}
+                        <h4 className="text-white font-medium">{item.commodity}</h4>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3 text-green-500" />
+                            {item.positiveEvents} {lang === 'ar' ? 'إيجابي' : 'positive'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <TrendingDown className="h-3 w-3 text-red-500" />
+                            {item.negativeEvents} {lang === 'ar' ? 'سلبي' : 'negative'}
+                          </span>
+                        </div>
                       </div>
-                    )}
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${item.avgImpact >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {item.avgImpact >= 0 ? '+' : ''}{item.avgImpact}%
+                        </div>
+                        <div className="text-xs text-gray-400">{lang === 'ar' ? 'متوسط التأثير' : 'Avg Impact'}</div>
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Forecast Tab */}
-        <TabsContent value="forecast" className="space-y-6">
-          {/* Price Impact Forecast Chart */}
-          <Card className="bg-trading-card border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'توقع تأثير الطقس على الأسعار (7 أيام)' : 'Weather Price Impact Forecast (7 days)'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={correlations}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="commodity" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="priceChange" 
-                    fill="#3B82F6"
-                    name={lang === 'ar' ? 'تغيير السعر المتوقع (%)' : 'Expected Price Change (%)'}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+                ))}
+              </div>
             </CardContent>
           </Card>
-
-          {/* Detailed Forecasts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {correlations.map((correlation, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>{correlation.commodity}</span>
-                    <div className="flex items-center gap-2">
-                      {getForecastIcon(correlation.forecast)}
-                      <Badge className={
-                        correlation.forecast === 'bullish' ? 'bg-green-600' :
-                        correlation.forecast === 'bearish' ? 'bg-red-600' : 'bg-gray-600'
-                      }>
-                        {lang === 'ar' ? 
-                          (correlation.forecast === 'bullish' ? 'صاعد' :
-                           correlation.forecast === 'bearish' ? 'هابط' : 'محايد') :
-                          correlation.forecast}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <p className="text-2xl font-bold text-white">
-                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {lang === 'ar' ? 'تغيير السعر المتوقع' : 'Expected Price Change'}
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-300">
-                        {lang === 'ar' ? 'العوامل الرئيسية' : 'Key Factors'}
-                      </h4>
-                      <ul className="space-y-1">
-                        {correlation.weatherFactors.map((factor, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-gray-400 text-sm">
-                            <div className="w-1 h-1 bg-blue-400 rounded-full" />
-                            {factor}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                      {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Impact Analysis Tab */}
-        <TabsContent value="impact" className="space-y-6">
-          {/* Impact Analysis Chart */}
-          <Card className="bg-trading-card border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'تحليل تأثير الطقس على الأسعار' : 'Weather Price Impact Analysis'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <ScatterChart data={correlations}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="commodity" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                  <Scatter
-                    dataKey="priceChange"
-                    fill="#3B82F6"
-                    name={lang === 'ar' ? 'تغيير السعر (%)' : 'Price Change (%)'}
-                  />
-                </ScatterChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Impact Analysis Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {correlations.map((correlation, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>{correlation.commodity}</span>
-                    <div className="flex items-center gap-2">
-                      {getForecastIcon(correlation.forecast)}
-                      <Badge className={
-                        correlation.forecast === 'bullish' ? 'bg-green-600' :
-                        correlation.forecast === 'bearish' ? 'bg-red-600' : 'bg-gray-600'
-                      }>
-                        {lang === 'ar' ? 
-                          (correlation.forecast === 'bullish' ? 'صاعد' :
-                           correlation.forecast === 'bearish' ? 'هابط' : 'محايد') :
-                          correlation.forecast}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <p className="text-2xl font-bold text-white">
-                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {lang === 'ar' ? 'تغيير السعر المتوقع' : 'Expected Price Change'}
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-300">
-                        {lang === 'ar' ? 'العوامل الرئيسية' : 'Key Factors'}
-                      </h4>
-                      <ul className="space-y-1">
-                        {correlation.weatherFactors.map((factor, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-gray-400 text-sm">
-                            <div className="w-1 h-1 bg-blue-400 rounded-full" />
-                            {factor}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                      {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Alerts Tab */}
-        <TabsContent value="alerts" className="space-y-6">
-          {/* Alerts Chart */}
-          <Card className="bg-trading-card border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'التنبيهات' : 'Alerts'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={correlations}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="commodity" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1F2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      color: '#F9FAFB'
-                    }}
-                  />
-                  <Bar 
-                    dataKey="priceChange" 
-                    fill="#3B82F6"
-                    name={lang === 'ar' ? 'تغيير السعر (%)' : 'Price Change (%)'}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Alerts Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {correlations.map((correlation, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>{correlation.commodity}</span>
-                    <div className="flex items-center gap-2">
-                      {getForecastIcon(correlation.forecast)}
-                      <Badge className={
-                        correlation.forecast === 'bullish' ? 'bg-green-600' :
-                        correlation.forecast === 'bearish' ? 'bg-red-600' : 'bg-gray-600'
-                      }>
-                        {lang === 'ar' ? 
-                          (correlation.forecast === 'bullish' ? 'صاعد' :
-                           correlation.forecast === 'bearish' ? 'هابط' : 'محايد') :
-                          correlation.forecast}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <p className="text-2xl font-bold text-white">
-                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {lang === 'ar' ? 'تغيير السعر المتوقع' : 'Expected Price Change'}
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-semibold text-gray-300">
-                        {lang === 'ar' ? 'العوامل الرئيسية' : 'Key Factors'}
-                      </h4>
-                      <ul className="space-y-1">
-                        {correlation.weatherFactors.map((factor, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-gray-400 text-sm">
-                            <div className="w-1 h-1 bg-blue-400 rounded-full" />
-                            {factor}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                      {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
     </div>
