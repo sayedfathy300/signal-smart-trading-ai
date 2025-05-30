@@ -8,6 +8,7 @@ import Charts from '@/pages/Charts';
 import Analysis from '@/pages/Analysis';
 import Portfolio from '@/pages/Portfolio';
 import TradingBot from '@/pages/TradingBot';
+import TradingPlatform from '@/pages/TradingPlatform';
 import AlternativeData from '@/pages/AlternativeData';
 import AIModels from '@/pages/AIModels';
 import ContinuousLearning from '@/pages/ContinuousLearning';
@@ -29,6 +30,7 @@ function App() {
             <Route path="analysis" element={<Analysis />} />
             <Route path="portfolio" element={<Portfolio />} />
             <Route path="trading-bot" element={<TradingBot />} />
+            <Route path="trading-platform" element={<TradingPlatform />} />
             <Route path="alternative-data" element={<AlternativeData />} />
             <Route path="ai-models" element={<AIModels />} />
             <Route path="continuous-learning" element={<ContinuousLearning />} />

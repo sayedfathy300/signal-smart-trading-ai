@@ -7,7 +7,8 @@ import {
   BarChart, 
   Settings,
   Bot,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ interface TradingControlsProps {
   onStop: () => void;
   onSimulate: () => void;
   onOpenBot: () => void;
+  onOpenPlatform?: () => void;
   isRunning: boolean;
   className?: string;
   lang?: 'en' | 'ar';
@@ -26,6 +28,7 @@ export function TradingControls({
   onStop, 
   onSimulate, 
   onOpenBot,
+  onOpenPlatform,
   isRunning, 
   className,
   lang = 'en'
@@ -67,6 +70,16 @@ export function TradingControls({
         <Bot className="ml-2 h-4 w-4" />
         {lang === 'en' ? 'AI Bot' : 'بوت الذكاء'}
       </Button>
+
+      {onOpenPlatform && (
+        <Button 
+          onClick={onOpenPlatform} 
+          className="bg-orange-600 hover:bg-orange-700 text-white flex-1 min-w-[140px]"
+        >
+          <Zap className="ml-2 h-4 w-4" />
+          {lang === 'en' ? 'Trading Platform' : 'منصة التداول'}
+        </Button>
+      )}
     </div>
   );
 }

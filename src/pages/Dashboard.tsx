@@ -75,6 +75,10 @@ const Dashboard = () => {
     navigate('/trading-bot');
   };
 
+  const handleOpenPlatform = () => {
+    navigate('/trading-platform');
+  };
+
   return (
     <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
       {/* الرأس */}
@@ -159,6 +163,7 @@ const Dashboard = () => {
             onStop={handleStopTrading}
             onSimulate={handleSimulate}
             onOpenBot={handleOpenBot}
+            onOpenPlatform={handleOpenPlatform}
             isRunning={isTrading}
             lang="ar"
           />
