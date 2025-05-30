@@ -1,6 +1,110 @@
-
-import * as speakeasy from 'speakeasy';
 import * as rs from 'jsrsasign';
+
+// Browser-compatible TOTP implementation
+class BrowserTOTP {
+  private static base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+  static generateSecret(length: number = 32): string {
+    const buffer = new Uint8Array(length);
+    crypto.getRandomValues(buffer);
+    let result = '';
+    for (let i = 0; i < buffer.length; i++) {
+      result += this.base32Chars[buffer[i] % 32];
+    }
+    return result;
+  }
+
+  static async generateTOTP(secret: string, timeStep: number = 30): Promise<string> {
+    const key = this.base32ToBytes(secret);
+    const time = Math.floor(Date.now() / 1000 / timeStep);
+    const timeBytes = new ArrayBuffer(8);
+    const timeView = new DataView(timeBytes);
+    timeView.setUint32(4, time, false);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'HMAC', hash: 'SHA-1' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
+    const hmac = new Uint8Array(signature);
+    
+    const offset = hmac[19] & 0xf;
+    const code = (
+      ((hmac[offset] & 0x7f) << 24) |
+      ((hmac[offset + 1] & 0xff) << 16) |
+      ((hmac[offset + 2] & 0xff) << 8) |
+      (hmac[offset + 3] & 0xff)
+    ) % 1000000;
+
+    return code.toString().padStart(6, '0');
+  }
+
+  static async verifyTOTP(token: string, secret: string, window: number = 2): Promise<boolean> {
+    const timeStep = 30;
+    const currentTime = Math.floor(Date.now() / 1000 / timeStep);
+    
+    for (let i = -window; i <= window; i++) {
+      const time = currentTime + i;
+      const timeBytes = new ArrayBuffer(8);
+      const timeView = new DataView(timeBytes);
+      timeView.setUint32(4, time, false);
+
+      const key = this.base32ToBytes(secret);
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        key,
+        { name: 'HMAC', hash: 'SHA-1' },
+        false,
+        ['sign']
+      );
+
+      const signature = await crypto.subtle.sign('HMAC', cryptoKey, timeBytes);
+      const hmac = new Uint8Array(signature);
+      
+      const offset = hmac[19] & 0xf;
+      const code = (
+        ((hmac[offset] & 0x7f) << 24) |
+        ((hmac[offset + 1] & 0xff) << 16) |
+        ((hmac[offset + 2] & 0xff) << 8) |
+        (hmac[offset + 3] & 0xff)
+      ) % 1000000;
+
+      if (code.toString().padStart(6, '0') === token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static base32ToBytes(base32: string): Uint8Array {
+    const cleanedBase32 = base32.toUpperCase().replace(/[^A-Z2-7]/g, '');
+    const bytes = new Uint8Array(Math.floor(cleanedBase32.length * 5 / 8));
+    let index = 0;
+    let bits = 0;
+    let value = 0;
+
+    for (let i = 0; i < cleanedBase32.length; i++) {
+      const char = cleanedBase32[i];
+      const charIndex = this.base32Chars.indexOf(char);
+      
+      if (charIndex === -1) continue;
+      
+      value = (value << 5) | charIndex;
+      bits += 5;
+      
+      if (bits >= 8) {
+        bytes[index++] = (value >>> (bits - 8)) & 255;
+        bits -= 8;
+      }
+    }
+    
+    return bytes;
+  }
+}
 
 export interface SecurityMetrics {
   encryptionStatus: 'active' | 'inactive';
@@ -45,7 +149,7 @@ export interface DigitalSignature {
 export interface APIRateLimit {
   endpoint: string;
   limit: number;
-  window: number; // in milliseconds
+  window: number;
   requests: Array<{
     timestamp: number;
     ip: string;
@@ -159,27 +263,25 @@ class SecurityService {
     }
   }
 
-  // إعداد المصادقة متعددة العوامل
+  // Updated MFA methods using browser-compatible TOTP
   setupMFA(userId: string): MFASetup {
     try {
-      const secret = speakeasy.generateSecret({
-        name: `Trading Platform (${userId})`,
-        issuer: 'AI Trading Platform',
-        length: 32
-      });
+      const secret = BrowserTOTP.generateSecret(32);
+      this.mfaSecrets.set(userId, secret);
 
-      this.mfaSecrets.set(userId, secret.base32);
-
-      // إنشاء رموز احتياطية
       const backupCodes = Array.from({ length: 10 }, () => 
         Math.random().toString(36).substring(2, 8).toUpperCase()
       );
 
+      const issuer = 'AI Trading Platform';
+      const accountName = `Trading Platform (${userId})`;
+      const qrCodeUrl = `otpauth://totp/${encodeURIComponent(accountName)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}`;
+
       console.log(`🔒 تم إعداد MFA للمستخدم: ${userId}`);
 
       return {
-        secret: secret.base32,
-        qrCode: secret.otpauth_url || '',
+        secret,
+        qrCode: qrCodeUrl,
         backupCodes
       };
     } catch (error) {
@@ -188,21 +290,14 @@ class SecurityService {
     }
   }
 
-  // التحقق من رمز MFA
-  verifyMFA(userId: string, token: string): boolean {
+  async verifyMFA(userId: string, token: string): Promise<boolean> {
     try {
       const secret = this.mfaSecrets.get(userId);
       if (!secret) {
         throw new Error('لم يتم العثور على سر MFA للمستخدم');
       }
 
-      const verified = speakeasy.totp.verify({
-        secret: secret,
-        encoding: 'base32',
-        token: token,
-        window: 2 // السماح بنافذة زمنية 2 خطوة
-      });
-
+      const verified = await BrowserTOTP.verifyTOTP(token, secret, 2);
       console.log(`🔐 تحقق MFA للمستخدم ${userId}: ${verified ? 'نجح' : 'فشل'}`);
       return verified;
     } catch (error) {
