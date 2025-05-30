@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -20,7 +19,8 @@ interface DashboardItem {
 }
 
 interface DragDropCustomizationProps {
-  lang: 'en' | 'ar';
+  lang?: 'en' | 'ar';
+  onLayoutChange?: (items: any[]) => void;
 }
 
 const DraggableItem = ({ item, index, moveItem, toggleVisibility, lang }: {
@@ -167,7 +167,7 @@ const GridItem = ({ item, lang }: { item: DashboardItem; lang: 'en' | 'ar' }) =>
   );
 };
 
-const DragDropCustomization: React.FC<DragDropCustomizationProps> = ({ lang }) => {
+const DragDropCustomization: React.FC<DragDropCustomizationProps> = ({ lang = 'ar', onLayoutChange }) => {
   const [dashboardItems, setDashboardItems] = useState<DashboardItem[]>([
     {
       id: 'charts',
@@ -244,6 +244,11 @@ const DragDropCustomization: React.FC<DragDropCustomizationProps> = ({ lang }) =
         visible: true
       }))
     );
+  };
+
+  const handleLayoutChange = (newItems: any[]) => {
+    setDashboardItems(newItems);
+    onLayoutChange?.(newItems);
   };
 
   return (

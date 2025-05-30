@@ -201,7 +201,10 @@ const AdvancedUI = () => {
           </TabsContent>
 
           <TabsContent value="customization" className="space-y-4">
-            <DragDropCustomization lang={lang} onLayoutChange={handleLayoutChange} />
+            <DragDropCustomization 
+              lang={lang} 
+              onLayoutChange={(items) => console.log('Layout changed:', items)}
+            />
           </TabsContent>
 
           <TabsContent value="export" className="space-y-4">

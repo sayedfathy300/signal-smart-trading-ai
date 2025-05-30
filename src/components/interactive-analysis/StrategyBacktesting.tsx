@@ -1,824 +1,445 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Save, 
-  Download,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Target,
-  Calendar,
-  DollarSign,
-  Percent,
-  AlertTriangle
-} from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { LineChart, Line } from 'recharts';
+import { ArrowRight, Download, RefreshCw } from 'lucide-react';
 
 interface StrategyBacktestingProps {
-  lang: 'en' | 'ar';
+  lang?: 'en' | 'ar';
 }
 
-interface BacktestConfig {
-  strategyName: string;
-  symbol: string;
-  timeframe: string;
-  startDate: string;
-  endDate: string;
-  initialCapital: number;
-  riskPerTrade: number;
-  maxOpenTrades: number;
-  commission: number;
-  slippage: number;
-}
-
-interface BacktestResult {
+interface BacktestResults {
   totalTrades: number;
-  winningTrades: number;
-  losingTrades: number;
   winRate: number;
-  totalReturn: number;
-  maxDrawdown: number;
-  sharpeRatio: number;
   profitFactor: number;
-  averageWin: number;
-  averageLoss: number;
-  largestWin: number;
-  largestLoss: number;
-  consecutiveWins: number;
-  consecutiveLosses: number;
-  finalCapital: number;
-  trades: Trade[];
-  equityCurve: EquityPoint[];
-  monthlyReturns: MonthlyReturn[];
+  sharpeRatio: number;
+  maxDrawdown: number;
+  netProfit: number;
+  equity: number[];
+  trades: {
+    date: string;
+    pnl: number;
+    type: 'LONG' | 'SHORT';
+    symbol: string;
+  }[];
 }
 
-interface Trade {
-  id: string;
-  symbol: string;
-  type: 'BUY' | 'SELL';
-  entryDate: string;
-  exitDate: string;
-  entryPrice: number;
-  exitPrice: number;
-  quantity: number;
-  pnl: number;
-  pnlPercent: number;
-  commission: number;
-  duration: number;
-}
-
-interface EquityPoint {
-  date: string;
-  equity: number;
-  drawdown: number;
-}
-
-interface MonthlyReturn {
-  month: string;
-  return: number;
-}
-
-const StrategyBacktesting: React.FC<StrategyBacktestingProps> = ({ lang }) => {
-  const [config, setConfig] = useState<BacktestConfig>({
-    strategyName: 'RSI Strategy',
-    symbol: 'EUR/USD',
-    timeframe: '1day',
-    startDate: '2023-01-01',
-    endDate: '2024-01-01',
-    initialCapital: 10000,
-    riskPerTrade: 2,
-    maxOpenTrades: 1,
-    commission: 0.1,
-    slippage: 0.05
-  });
-
-  const [strategy, setStrategy] = useState(`
-// RSI Strategy Example
-def strategy():
-    if RSI(14) < 30 and close > SMA(20):
-        buy()
-    elif RSI(14) > 70:
-        sell()
-    
-    # Stop Loss and Take Profit
-    if position_size > 0:
-        if close < entry_price * 0.98:  # 2% Stop Loss
-            sell()
-        elif close > entry_price * 1.04:  # 4% Take Profit
-            sell()
-`);
-
-  const [isRunning, setIsRunning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<BacktestResult | null>(null);
-  const [activeTab, setActiveTab] = useState('setup');
-
-  const symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAUUSD', 'BTC/USD', 'ETH/USD'];
-  const timeframes = [
-    { value: '1min', label: lang === 'ar' ? '1 دقيقة' : '1 Minute' },
-    { value: '5min', label: lang === 'ar' ? '5 دقائق' : '5 Minutes' },
-    { value: '15min', label: lang === 'ar' ? '15 دقيقة' : '15 Minutes' },
-    { value: '1hour', label: lang === 'ar' ? '1 ساعة' : '1 Hour' },
-    { value: '4hour', label: lang === 'ar' ? '4 ساعات' : '4 Hours' },
-    { value: '1day', label: lang === 'ar' ? '1 يوم' : '1 Day' }
-  ];
-
-  useEffect(() => {
-    if (isRunning) {
-      const interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            setIsRunning(false);
-            generateMockResults();
-            return 100;
-          }
-          return prev + 2;
-        });
-      }, 100);
-
-      return () => clearInterval(interval);
-    }
-  }, [isRunning]);
-
-  const generateMockResults = () => {
-    const mockTrades: Trade[] = Array.from({ length: 25 }, (_, i) => {
-      const entryDate = new Date(2023, 0, i * 14);
-      const exitDate = new Date(entryDate.getTime() + (Math.random() * 7 + 1) * 24 * 60 * 60 * 1000);
-      const entryPrice = 1.1000 + Math.random() * 0.1;
-      const exitPrice = entryPrice * (0.98 + Math.random() * 0.06);
-      const pnl = (exitPrice - entryPrice) * 10000;
-      
-      return {
-        id: `trade_${i}`,
-        symbol: config.symbol,
-        type: Math.random() > 0.5 ? 'BUY' : 'SELL',
-        entryDate: entryDate.toISOString().split('T')[0],
-        exitDate: exitDate.toISOString().split('T')[0],
-        entryPrice,
-        exitPrice,
-        quantity: 10000,
-        pnl,
-        pnlPercent: (pnl / (entryPrice * 10000)) * 100,
-        commission: config.commission,
-        duration: Math.ceil((exitDate.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24))
-      };
-    });
-
-    const winningTrades = mockTrades.filter(t => t.pnl > 0);
-    const losingTrades = mockTrades.filter(t => t.pnl < 0);
-    const totalPnL = mockTrades.reduce((sum, t) => sum + t.pnl, 0);
-
-    const equityCurve: EquityPoint[] = [];
-    let runningEquity = config.initialCapital;
-    let maxEquity = config.initialCapital;
-    
-    mockTrades.forEach((trade, i) => {
-      runningEquity += trade.pnl;
-      maxEquity = Math.max(maxEquity, runningEquity);
-      const drawdown = ((maxEquity - runningEquity) / maxEquity) * 100;
-      
-      equityCurve.push({
-        date: trade.exitDate,
-        equity: runningEquity,
-        drawdown
-      });
-    });
-
-    const monthlyReturns: MonthlyReturn[] = [
-      { month: '2023-01', return: 2.5 },
-      { month: '2023-02', return: -1.2 },
-      { month: '2023-03', return: 3.8 },
-      { month: '2023-04', return: 1.5 },
-      { month: '2023-05', return: -0.8 },
-      { month: '2023-06', return: 4.2 },
-      { month: '2023-07', return: 2.1 },
-      { month: '2023-08', return: -1.5 },
-      { month: '2023-09', return: 3.2 },
-      { month: '2023-10', return: 1.8 },
-      { month: '2023-11', return: -2.1 },
-      { month: '2023-12', return: 2.9 }
-    ];
-
-    setResults({
-      totalTrades: mockTrades.length,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      winRate: (winningTrades.length / mockTrades.length) * 100,
-      totalReturn: (totalPnL / config.initialCapital) * 100,
-      maxDrawdown: Math.max(...equityCurve.map(e => e.drawdown)),
-      sharpeRatio: 1.85,
-      profitFactor: Math.abs(winningTrades.reduce((sum, t) => sum + t.pnl, 0)) / 
-                    Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0)),
-      averageWin: winningTrades.reduce((sum, t) => sum + t.pnl, 0) / winningTrades.length,
-      averageLoss: losingTrades.reduce((sum, t) => sum + t.pnl, 0) / losingTrades.length,
-      largestWin: Math.max(...winningTrades.map(t => t.pnl)),
-      largestLoss: Math.min(...losingTrades.map(t => t.pnl)),
-      consecutiveWins: 5,
-      consecutiveLosses: 3,
-      finalCapital: config.initialCapital + totalPnL,
-      trades: mockTrades,
-      equityCurve,
-      monthlyReturns
-    });
-  };
+const StrategyBacktesting = ({ lang = 'ar' }: StrategyBacktestingProps) => {
+  const [isBacktesting, setIsBacktesting] = useState(false);
+  const [backtestResults, setBacktestResults] = useState<BacktestResults | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1d');
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+  const [startDate, setStartDate] = useState('2023-01-01');
+  const [endDate, setEndDate] = useState('2023-12-31');
+  const [initialCapital, setInitialCapital] = useState(10000);
+  const [riskPerTrade, setRiskPerTrade] = useState(1);
+  const [useStopLoss, setUseStopLoss] = useState(true);
+  const [useTakeProfit, setUseTakeProfit] = useState(true);
+  const [stopLossPercent, setStopLossPercent] = useState(2);
+  const [takeProfitPercent, setTakeProfitPercent] = useState(4);
 
   const runBacktest = () => {
-    setIsRunning(true);
-    setProgress(0);
-    setResults(null);
-  };
-
-  const stopBacktest = () => {
-    setIsRunning(false);
-    setProgress(0);
-  };
-
-  const resetBacktest = () => {
-    setProgress(0);
-    setResults(null);
-  };
-
-  const exportResults = () => {
-    if (!results) return;
+    setIsBacktesting(true);
     
-    const data = {
-      config,
-      results,
-      strategy
-    };
+    // Simulate API call with timeout
+    setTimeout(() => {
+      // Mock backtest results
+      const mockResults: BacktestResults = {
+        totalTrades: 124,
+        winRate: 62.5,
+        profitFactor: 1.87,
+        sharpeRatio: 1.34,
+        maxDrawdown: 12.8,
+        netProfit: 3245.78,
+        equity: Array(100).fill(0).map((_, i) => ({
+          date: `2023-${Math.floor(i / 8) + 1}-${(i % 8) * 4 + 1}`,
+          value: initialCapital * (1 + (Math.sin(i / 10) * 0.1) + (i / 100))
+        })),
+        trades: Array(20).fill(0).map((_, i) => ({
+          date: `2023-${Math.floor(i / 2) + 1}-${(i % 4) * 7 + 1}`,
+          pnl: Math.random() > 0.4 ? Math.random() * 500 : -Math.random() * 300,
+          type: Math.random() > 0.5 ? 'LONG' : 'SHORT',
+          symbol: selectedSymbol
+        }))
+      };
+      
+      setBacktestResults(mockResults);
+      setIsBacktesting(false);
+    }, 2000);
+  };
+
+  const downloadResults = () => {
+    if (!backtestResults) return;
     
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `backtest_${config.strategyName}_${Date.now()}.json`;
-    a.click();
+    const jsonString = JSON.stringify(backtestResults, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const href = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = `backtest-${selectedSymbol}-${selectedTimeframe}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
   };
 
   return (
-    <Card className="bg-trading-card border-gray-800">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          {lang === 'ar' ? 'اختبار الاستراتيجيات الخلفي' : 'Strategy Backtesting'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="setup">
-              {lang === 'ar' ? 'الإعداد' : 'Setup'}
-            </TabsTrigger>
-            <TabsTrigger value="strategy">
-              {lang === 'ar' ? 'الاستراتيجية' : 'Strategy'}
-            </TabsTrigger>
-            <TabsTrigger value="results">
-              {lang === 'ar' ? 'النتائج' : 'Results'}
-            </TabsTrigger>
-            <TabsTrigger value="trades">
-              {lang === 'ar' ? 'الصفقات' : 'Trades'}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="setup" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {lang === 'ar' ? 'إعدادات الاختبار' : 'Backtest Settings'}
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="strategyName" className="text-gray-400">
-                      {lang === 'ar' ? 'اسم الاستراتيجية' : 'Strategy Name'}
-                    </Label>
-                    <Input
-                      id="strategyName"
-                      value={config.strategyName}
-                      onChange={(e) => setConfig(prev => ({ ...prev, strategyName: e.target.value }))}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="symbol" className="text-gray-400">
-                      {lang === 'ar' ? 'الرمز' : 'Symbol'}
-                    </Label>
-                    <Select
-                      value={config.symbol}
-                      onValueChange={(value) => setConfig(prev => ({ ...prev, symbol: value }))}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
-                        {symbols.map(symbol => (
-                          <SelectItem key={symbol} value={symbol} className="text-white">
-                            {symbol}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="timeframe" className="text-gray-400">
-                      {lang === 'ar' ? 'الإطار الزمني' : 'Timeframe'}
-                    </Label>
-                    <Select
-                      value={config.timeframe}
-                      onValueChange={(value) => setConfig(prev => ({ ...prev, timeframe: value }))}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
-                        {timeframes.map(tf => (
-                          <SelectItem key={tf.value} value={tf.value} className="text-white">
-                            {tf.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="startDate" className="text-gray-400">
-                        {lang === 'ar' ? 'تاريخ البداية' : 'Start Date'}
-                      </Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={config.startDate}
-                        onChange={(e) => setConfig(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="endDate" className="text-gray-400">
-                        {lang === 'ar' ? 'تاريخ النهاية' : 'End Date'}
-                      </Label>
-                      <Input
-                        id="endDate"
-                        type="date"
-                        value={config.endDate}
-                        onChange={(e) => setConfig(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {lang === 'ar' ? 'إعدادات المخاطر' : 'Risk Settings'}
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="initialCapital" className="text-gray-400">
-                      {lang === 'ar' ? 'رأس المال الأولي ($)' : 'Initial Capital ($)'}
-                    </Label>
-                    <Input
-                      id="initialCapital"
-                      type="number"
-                      value={config.initialCapital}
-                      onChange={(e) => setConfig(prev => ({ ...prev, initialCapital: Number(e.target.value) }))}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="riskPerTrade" className="text-gray-400">
-                      {lang === 'ar' ? 'المخاطرة لكل صفقة (%)' : 'Risk Per Trade (%)'}
-                    </Label>
-                    <Input
-                      id="riskPerTrade"
-                      type="number"
-                      step="0.1"
-                      value={config.riskPerTrade}
-                      onChange={(e) => setConfig(prev => ({ ...prev, riskPerTrade: Number(e.target.value) }))}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="maxOpenTrades" className="text-gray-400">
-                      {lang === 'ar' ? 'أقصى صفقات مفتوحة' : 'Max Open Trades'}
-                    </Label>
-                    <Input
-                      id="maxOpenTrades"
-                      type="number"
-                      value={config.maxOpenTrades}
-                      onChange={(e) => setConfig(prev => ({ ...prev, maxOpenTrades: Number(e.target.value) }))}
-                      className="bg-gray-800 border-gray-700 text-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="commission" className="text-gray-400">
-                        {lang === 'ar' ? 'العمولة (%)' : 'Commission (%)'}
-                      </Label>
-                      <Input
-                        id="commission"
-                        type="number"
-                        step="0.01"
-                        value={config.commission}
-                        onChange={(e) => setConfig(prev => ({ ...prev, commission: Number(e.target.value) }))}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="slippage" className="text-gray-400">
-                        {lang === 'ar' ? 'الانزلاق (%)' : 'Slippage (%)'}
-                      </Label>
-                      <Input
-                        id="slippage"
-                        type="number"
-                        step="0.01"
-                        value={config.slippage}
-                        onChange={(e) => setConfig(prev => ({ ...prev, slippage: Number(e.target.value) }))}
-                        className="bg-gray-800 border-gray-700 text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button
-                onClick={runBacktest}
-                disabled={isRunning}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                {lang === 'ar' ? 'تشغيل الاختبار' : 'Run Backtest'}
-              </Button>
-
-              {isRunning && (
-                <Button onClick={stopBacktest} variant="outline">
-                  <Pause className="h-4 w-4 mr-2" />
-                  {lang === 'ar' ? 'إيقاف' : 'Stop'}
-                </Button>
-              )}
-
-              <Button onClick={resetBacktest} variant="outline">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {lang === 'ar' ? 'إعادة تعيين' : 'Reset'}
-              </Button>
-
-              {results && (
-                <Button onClick={exportResults} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  {lang === 'ar' ? 'تصدير النتائج' : 'Export Results'}
-                </Button>
-              )}
-            </div>
-
-            {isRunning && (
+    <div className="space-y-6">
+      <Card className="bg-trading-card border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white">
+            {lang === 'ar' ? 'إعدادات اختبار الاستراتيجية' : 'Strategy Backtest Settings'}
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            {lang === 'ar' ? 'قم بتكوين معلمات الاختبار الخلفي لاستراتيجيتك' : 'Configure the backtest parameters for your strategy'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">
-                    {lang === 'ar' ? 'تقدم الاختبار:' : 'Backtest Progress:'}
-                  </span>
-                  <span className="text-white">{progress}%</span>
-                </div>
-                <Progress value={progress} className="w-full" />
+                <Label htmlFor="symbol" className="text-gray-300">
+                  {lang === 'ar' ? 'الرمز' : 'Symbol'}
+                </Label>
+                <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
+                  <SelectTrigger id="symbol" className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder={lang === 'ar' ? 'اختر الرمز' : 'Select symbol'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectItem value="BTCUSDT">BTC/USDT</SelectItem>
+                    <SelectItem value="ETHUSDT">ETH/USDT</SelectItem>
+                    <SelectItem value="BNBUSDT">BNB/USDT</SelectItem>
+                    <SelectItem value="ADAUSDT">ADA/USDT</SelectItem>
+                    <SelectItem value="SOLUSDT">SOL/USDT</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="strategy" className="space-y-4">
+              
+              <div className="space-y-2">
+                <Label htmlFor="timeframe" className="text-gray-300">
+                  {lang === 'ar' ? 'الإطار الزمني' : 'Timeframe'}
+                </Label>
+                <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+                  <SelectTrigger id="timeframe" className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder={lang === 'ar' ? 'اختر الإطار الزمني' : 'Select timeframe'} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectItem value="1m">1m</SelectItem>
+                    <SelectItem value="5m">5m</SelectItem>
+                    <SelectItem value="15m">15m</SelectItem>
+                    <SelectItem value="1h">1h</SelectItem>
+                    <SelectItem value="4h">4h</SelectItem>
+                    <SelectItem value="1d">1d</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate" className="text-gray-300">
+                    {lang === 'ar' ? 'تاريخ البدء' : 'Start Date'}
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate" className="text-gray-300">
+                    {lang === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="initialCapital" className="text-gray-300">
+                  {lang === 'ar' ? 'رأس المال الأولي' : 'Initial Capital'} (USDT)
+                </Label>
+                <Input
+                  id="initialCapital"
+                  type="number"
+                  value={initialCapital}
+                  onChange={(e) => setInitialCapital(Number(e.target.value))}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-gray-300">
+                  {lang === 'ar' ? 'المخاطرة لكل صفقة' : 'Risk Per Trade'} ({riskPerTrade}%)
+                </Label>
+                <Slider
+                  value={[riskPerTrade]}
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  onValueChange={(value) => setRiskPerTrade(value[0])}
+                  className="py-4"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="useStopLoss"
+                    checked={useStopLoss}
+                    onCheckedChange={setUseStopLoss}
+                  />
+                  <Label htmlFor="useStopLoss" className="text-gray-300">
+                    {lang === 'ar' ? 'وقف الخسارة' : 'Stop Loss'}
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="useTakeProfit"
+                    checked={useTakeProfit}
+                    onCheckedChange={setUseTakeProfit}
+                  />
+                  <Label htmlFor="useTakeProfit" className="text-gray-300">
+                    {lang === 'ar' ? 'جني الأرباح' : 'Take Profit'}
+                  </Label>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-300">
+                    {lang === 'ar' ? 'نسبة وقف الخسارة' : 'Stop Loss %'} ({stopLossPercent}%)
+                  </Label>
+                  <Slider
+                    disabled={!useStopLoss}
+                    value={[stopLossPercent]}
+                    min={0.5}
+                    max={10}
+                    step={0.5}
+                    onValueChange={(value) => setStopLossPercent(value[0])}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-gray-300">
+                    {lang === 'ar' ? 'نسبة جني الأرباح' : 'Take Profit %'} ({takeProfitPercent}%)
+                  </Label>
+                  <Slider
+                    disabled={!useTakeProfit}
+                    value={[takeProfitPercent]}
+                    min={0.5}
+                    max={20}
+                    step={0.5}
+                    onValueChange={(value) => setTakeProfitPercent(value[0])}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button 
+              onClick={runBacktest}
+              disabled={isBacktesting}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isBacktesting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {lang === 'ar' ? 'جاري الاختبار...' : 'Running Backtest...'}
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  {lang === 'ar' ? 'تشغيل الاختبار' : 'Run Backtest'}
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {backtestResults && (
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <Label htmlFor="strategy" className="text-gray-400">
-                {lang === 'ar' ? 'كود الاستراتيجية' : 'Strategy Code'}
-              </Label>
-              <Textarea
-                id="strategy"
-                value={strategy}
-                onChange={(e) => setStrategy(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white font-mono mt-2"
-                rows={20}
-                placeholder={lang === 'ar' ? 'اكتب كود استراتيجيتك هنا...' : 'Write your strategy code here...'}
-              />
+              <CardTitle className="text-white">
+                {lang === 'ar' ? 'نتائج الاختبار' : 'Backtest Results'}
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                {lang === 'ar' ? `${selectedSymbol} على إطار ${selectedTimeframe}` : `${selectedSymbol} on ${selectedTimeframe} timeframe`}
+              </CardDescription>
             </div>
-
-            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <h4 className="text-blue-400 font-medium mb-2">
-                {lang === 'ar' ? 'أمثلة على الدوال المتاحة:' : 'Available Functions:'}
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm text-blue-300">
-                <div>
-                  <code>RSI(period)</code> - {lang === 'ar' ? 'مؤشر القوة النسبية' : 'Relative Strength Index'}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={downloadResults}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {lang === 'ar' ? 'تنزيل النتائج' : 'Download Results'}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'إجمالي الصفقات' : 'Total Trades'}
                 </div>
-                <div>
-                  <code>SMA(period)</code> - {lang === 'ar' ? 'المتوسط المتحرك البسيط' : 'Simple Moving Average'}
+                <div className="text-white text-2xl font-bold">
+                  {backtestResults.totalTrades}
                 </div>
-                <div>
-                  <code>EMA(period)</code> - {lang === 'ar' ? 'المتوسط المتحرك الأسي' : 'Exponential Moving Average'}
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'معدل الربح' : 'Win Rate'}
                 </div>
-                <div>
-                  <code>MACD(fast, slow, signal)</code> - {lang === 'ar' ? 'مؤشر الماكد' : 'MACD Indicator'}
+                <div className="text-white text-2xl font-bold">
+                  {backtestResults.winRate}%
                 </div>
-                <div>
-                  <code>buy()</code> - {lang === 'ar' ? 'إشارة شراء' : 'Buy Signal'}
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'عامل الربح' : 'Profit Factor'}
                 </div>
-                <div>
-                  <code>sell()</code> - {lang === 'ar' ? 'إشارة بيع' : 'Sell Signal'}
+                <div className="text-white text-2xl font-bold">
+                  {backtestResults.profitFactor}
+                </div>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'نسبة شارب' : 'Sharpe Ratio'}
+                </div>
+                <div className="text-white text-2xl font-bold">
+                  {backtestResults.sharpeRatio}
+                </div>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'أقصى انخفاض' : 'Max Drawdown'}
+                </div>
+                <div className="text-white text-2xl font-bold">
+                  {backtestResults.maxDrawdown}%
+                </div>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'صافي الربح' : 'Net Profit'}
+                </div>
+                <div className={`text-2xl font-bold ${backtestResults.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {backtestResults.netProfit >= 0 ? '+' : ''}{backtestResults.netProfit.toFixed(2)} USDT
+                </div>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-gray-400 text-sm">
+                  {lang === 'ar' ? 'العائد' : 'Return'}
+                </div>
+                <div className={`text-2xl font-bold ${backtestResults.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {backtestResults.netProfit >= 0 ? '+' : ''}{((backtestResults.netProfit / initialCapital) * 100).toFixed(2)}%
                 </div>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="results" className="space-y-6">
-            {results ? (
-              <>
-                {/* Performance Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardContent className="p-4 text-center">
-                      <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-400" />
-                      <div className="text-2xl font-bold text-white">
-                        {results.totalReturn.toFixed(2)}%
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'العائد الإجمالي' : 'Total Return'}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardContent className="p-4 text-center">
-                      <Target className="h-8 w-8 mx-auto mb-2 text-blue-400" />
-                      <div className="text-2xl font-bold text-white">
-                        {results.winRate.toFixed(1)}%
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'معدل الفوز' : 'Win Rate'}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardContent className="p-4 text-center">
-                      <TrendingDown className="h-8 w-8 mx-auto mb-2 text-red-400" />
-                      <div className="text-2xl font-bold text-white">
-                        {results.maxDrawdown.toFixed(2)}%
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'أقصى تراجع' : 'Max Drawdown'}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardContent className="p-4 text-center">
-                      <BarChart3 className="h-8 w-8 mx-auto mb-2 text-purple-400" />
-                      <div className="text-2xl font-bold text-white">
-                        {results.sharpeRatio.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'نسبة شارب' : 'Sharpe Ratio'}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Equity Curve */}
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white">
-                      {lang === 'ar' ? 'منحنى الرأسمال' : 'Equity Curve'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={results.equityCurve}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                          <XAxis dataKey="date" stroke="#9CA3AF" />
-                          <YAxis stroke="#9CA3AF" />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: '#1F2937', 
-                              border: '1px solid #374151',
-                              borderRadius: '6px'
-                            }}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="equity" 
-                            stroke="#00FF88" 
-                            strokeWidth={2}
-                            dot={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Monthly Returns */}
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white">
-                      {lang === 'ar' ? 'العوائد الشهرية' : 'Monthly Returns'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={results.monthlyReturns}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                          <XAxis dataKey="month" stroke="#9CA3AF" />
-                          <YAxis stroke="#9CA3AF" />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: '#1F2937', 
-                              border: '1px solid #374151',
-                              borderRadius: '6px'
-                            }}
-                          />
-                          <Bar 
-                            dataKey="return" 
-                            fill={(entry: any) => entry.return >= 0 ? '#00FF88' : '#FF4444'}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Detailed Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white">
-                        {lang === 'ar' ? 'إحصائيات الصفقات' : 'Trade Statistics'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'إجمالي الصفقات:' : 'Total Trades:'}</span>
-                        <span className="text-white">{results.totalTrades}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'الصفقات الرابحة:' : 'Winning Trades:'}</span>
-                        <span className="text-green-400">{results.winningTrades}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'الصفقات الخاسرة:' : 'Losing Trades:'}</span>
-                        <span className="text-red-400">{results.losingTrades}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'عامل الربح:' : 'Profit Factor:'}</span>
-                        <span className="text-white">{results.profitFactor.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'متوسط الربح:' : 'Average Win:'}</span>
-                        <span className="text-green-400">${results.averageWin.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'متوسط الخسارة:' : 'Average Loss:'}</span>
-                        <span className="text-red-400">${results.averageLoss.toFixed(2)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gray-800 border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="text-white">
-                        {lang === 'ar' ? 'إحصائيات الأداء' : 'Performance Statistics'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'أكبر ربح:' : 'Largest Win:'}</span>
-                        <span className="text-green-400">${results.largestWin.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'أكبر خسارة:' : 'Largest Loss:'}</span>
-                        <span className="text-red-400">${results.largestLoss.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'أرباح متتالية:' : 'Consecutive Wins:'}</span>
-                        <span className="text-white">{results.consecutiveWins}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'خسائر متتالية:' : 'Consecutive Losses:'}</span>
-                        <span className="text-white">{results.consecutiveLosses}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">{lang === 'ar' ? 'رأس المال النهائي:' : 'Final Capital:'}</span>
-                        <span className="text-white">${results.finalCapital.toFixed(2)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-500" />
-                <p className="text-gray-400">
-                  {lang === 'ar' ? 'قم بتشغيل الاختبار لعرض النتائج' : 'Run a backtest to see results'}
-                </p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="trades" className="space-y-4">
-            {results?.trades ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-white">
-                    {lang === 'ar' ? 'سجل الصفقات' : 'Trade Log'}
-                  </h3>
-                  <Badge variant="secondary">
-                    {results.trades.length} {lang === 'ar' ? 'صفقة' : 'trades'}
-                  </Badge>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left py-2 px-3 text-gray-400">
-                          {lang === 'ar' ? 'النوع' : 'Type'}
-                        </th>
-                        <th className="text-left py-2 px-3 text-gray-400">
-                          {lang === 'ar' ? 'الدخول' : 'Entry'}
-                        </th>
-                        <th className="text-left py-2 px-3 text-gray-400">
-                          {lang === 'ar' ? 'الخروج' : 'Exit'}
-                        </th>
-                        <th className="text-left py-2 px-3 text-gray-400">
-                          {lang === 'ar' ? 'المدة' : 'Duration'}
-                        </th>
-                        <th className="text-left py-2 px-3 text-gray-400">
-                          {lang === 'ar' ? 'الربح/الخسارة' : 'P&L'}
-                        </th>
-                        <th className="text-left py-2 px-3 text-gray-400">%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.trades.map(trade => (
-                        <tr key={trade.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                          <td className="py-2 px-3">
-                            <Badge variant={trade.type === 'BUY' ? 'default' : 'secondary'}>
-                              {trade.type}
-                            </Badge>
-                          </td>
-                          <td className="py-2 px-3 text-white">
-                            {trade.entryPrice.toFixed(4)}
-                            <div className="text-xs text-gray-400">{trade.entryDate}</div>
-                          </td>
-                          <td className="py-2 px-3 text-white">
-                            {trade.exitPrice.toFixed(4)}
-                            <div className="text-xs text-gray-400">{trade.exitDate}</div>
-                          </td>
-                          <td className="py-2 px-3 text-gray-400">
-                            {trade.duration} {lang === 'ar' ? 'يوم' : 'days'}
-                          </td>
-                          <td className={`py-2 px-3 ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            ${trade.pnl.toFixed(2)}
-                          </td>
-                          <td className={`py-2 px-3 ${trade.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.pnlPercent.toFixed(2)}%
-                          </td>
-                        </tr>
+            
+            <Tabs defaultValue="equity" className="w-full">
+              <TabsList className="bg-gray-800 border-gray-700">
+                <TabsTrigger value="equity">
+                  {lang === 'ar' ? 'منحنى الأسهم' : 'Equity Curve'}
+                </TabsTrigger>
+                <TabsTrigger value="trades">
+                  {lang === 'ar' ? 'الصفقات' : 'Trades'}
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="equity" className="pt-4">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={backtestResults.equity}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                      domain={['auto', 'auto']}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1F2937', 
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#F9FAFB'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#3B82F6" 
+                      dot={false}
+                      name={lang === 'ar' ? 'قيمة المحفظة' : 'Portfolio Value'}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </TabsContent>
+              
+              <TabsContent value="trades" className="pt-4">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={backtestResults?.trades || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1F2937', 
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#F9FAFB'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="pnl" 
+                      name={lang === 'ar' ? 'الربح/الخسارة' : 'P&L'}
+                    >
+                      {(backtestResults?.trades || []).map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.pnl > 0 ? "#00FF88" : "#FF4444"} 
+                        />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-500" />
-                <p className="text-gray-400">
-                  {lang === 'ar' ? 'لا توجد صفقات للعرض' : 'No trades to display'}
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 
