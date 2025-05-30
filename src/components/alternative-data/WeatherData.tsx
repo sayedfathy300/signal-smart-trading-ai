@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   LineChart,
   Line,
@@ -15,19 +15,24 @@ import {
   Tooltip,
   ResponsiveContainer,
   BarChart,
-  Bar
+  Bar,
+  ScatterChart,
+  Scatter
 } from 'recharts';
 import { 
   Cloud, 
-  Sun, 
   CloudRain, 
-  Thermometer, 
+  Sun, 
+  Snowflake, 
   Wind, 
+  Thermometer, 
   Droplets,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  Globe
+  MapPin,
+  Clock,
+  Zap
 } from 'lucide-react';
 
 interface WeatherDataProps {
@@ -195,31 +200,50 @@ const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
   const getWeatherIcon = (condition: string) => {
     switch (condition) {
       case 'sunny':
-        return <Sun className="h-6 w-6 text-yellow-400" />;
-      case 'cloudy':
-        return <Cloud className="h-6 w-6 text-gray-400" />;
+        return <Sun className="h-5 w-5 text-yellow-400" />;
       case 'rainy':
-        return <CloudRain className="h-6 w-6 text-blue-400" />;
-      case 'stormy':
-        return <AlertTriangle className="h-6 w-6 text-red-400" />;
+        return <CloudRain className="h-5 w-5 text-blue-400" />;
+      case 'cloudy':
+        return <Cloud className="h-5 w-5 text-gray-400" />;
+      case 'snowy':
+        return <Snowflake className="h-5 w-5 text-blue-300" />;
+      case 'windy':
+        return <Wind className="h-5 w-5 text-green-400" />;
       default:
-        return <Cloud className="h-6 w-6 text-gray-400" />;
+        return <Cloud className="h-5 w-5 text-gray-400" />;
     }
   };
 
-  const getForecastIcon = (forecast: string) => {
-    switch (forecast) {
-      case 'bullish':
-        return <TrendingUp className="h-4 w-4 text-green-400" />;
-      case 'bearish':
-        return <TrendingDown className="h-4 w-4 text-red-400" />;
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'high':
+        return 'text-red-400';
+      case 'medium':
+        return 'text-yellow-400';
+      case 'low':
+        return 'text-green-400';
       default:
-        return <div className="h-4 w-4 bg-gray-400 rounded-full" />;
+        return 'text-gray-400';
     }
   };
 
-  const formatArabicNumber = (num: number) => {
-    return num.toLocaleString('ar-EG');
+  const getRiskColor = (level: string) => {
+    switch (level) {
+      case 'high':
+        return 'bg-red-600';
+      case 'medium':
+        return 'bg-yellow-600';
+      case 'low':
+        return 'bg-green-600';
+      default:
+        return 'bg-gray-600';
+    }
+  };
+
+  const formatArabicNumber = (num: number | string) => {
+    // Convert string to number if needed
+    const numberValue = typeof num === 'string' ? parseFloat(num) : num;
+    return numberValue.toLocaleString('ar-EG');
   };
 
   return (
@@ -233,33 +257,82 @@ const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
           </h2>
           <p className="text-gray-400">
             {lang === 'ar' 
-              ? 'تحليل تأثير الطقس على أسعار السلع الزراعية والتنبؤ بالاتجاهات'
-              : 'Analyze weather impact on agricultural commodity prices and forecast trends'}
+              ? 'تحليل تأثير الطقس على أسعار السلع الزراعية والطاقة'
+              : 'Analyze weather impact on agricultural and energy commodity prices'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-green-600">
-            {lang === 'ar' ? 'البيانات محدثة' : 'Data Updated'}
+          <Badge className="bg-blue-600">
+            {lang === 'ar' ? 'بيانات حية' : 'Live Data'}
           </Badge>
-          <Badge variant="outline" className="border-blue-500 text-blue-400">
-            {lang === 'ar' ? 'في الوقت الفعلي' : 'Real-time'}
+          <Badge variant="outline" className="border-green-500 text-green-400">
+            {lang === 'ar' ? 'محدث كل ساعة' : 'Hourly Updates'}
           </Badge>
         </div>
       </div>
 
+      {/* Regional Selection */}
+      <div className="flex gap-4">
+        <Select defaultValue="global">
+          <SelectTrigger className="w-48 bg-trading-card border-gray-600 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-trading-card border-gray-600">
+            <SelectItem value="global">
+              {lang === 'ar' ? 'عالمي' : 'Global'}
+            </SelectItem>
+            <SelectItem value="north-america">
+              {lang === 'ar' ? 'أمريكا الشمالية' : 'North America'}
+            </SelectItem>
+            <SelectItem value="europe">
+              {lang === 'ar' ? 'أوروبا' : 'Europe'}
+            </SelectItem>
+            <SelectItem value="asia">
+              {lang === 'ar' ? 'آسيا' : 'Asia'}
+            </SelectItem>
+            <SelectItem value="south-america">
+              {lang === 'ar' ? 'أمريكا الجنوبية' : 'South America'}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select defaultValue="all-commodities">
+          <SelectTrigger className="w-48 bg-trading-card border-gray-600 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-trading-card border-gray-600">
+            <SelectItem value="all-commodities">
+              {lang === 'ar' ? 'جميع السلع' : 'All Commodities'}
+            </SelectItem>
+            <SelectItem value="agriculture">
+              {lang === 'ar' ? 'زراعية' : 'Agriculture'}
+            </SelectItem>
+            <SelectItem value="energy">
+              {lang === 'ar' ? 'طاقة' : 'Energy'}
+            </SelectItem>
+            <SelectItem value="metals">
+              {lang === 'ar' ? 'معادن' : 'Metals'}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
+        <TabsList className="grid w-full grid-cols-5 bg-trading-card">
           <TabsTrigger value="overview">
             {lang === 'ar' ? 'نظرة عامة' : 'Overview'}
           </TabsTrigger>
-          <TabsTrigger value="correlations">
-            {lang === 'ar' ? 'الارتباطات' : 'Correlations'}
+          <TabsTrigger value="current">
+            {lang === 'ar' ? 'الحالة الحالية' : 'Current Conditions'}
           </TabsTrigger>
-          <TabsTrigger value="regional">
-            {lang === 'ar' ? 'البيانات الإقليمية' : 'Regional Data'}
+          <TabsTrigger value="forecast">
+            {lang === 'ar' ? 'التوقعات' : 'Forecast'}
           </TabsTrigger>
-          <TabsTrigger value="forecasts">
-            {lang === 'ar' ? 'التوقعات' : 'Forecasts'}
+          <TabsTrigger value="impact">
+            {lang === 'ar' ? 'تحليل التأثير' : 'Impact Analysis'}
+          </TabsTrigger>
+          <TabsTrigger value="alerts">
+            {lang === 'ar' ? 'التنبيهات' : 'Alerts'}
           </TabsTrigger>
         </TabsList>
 
@@ -362,100 +435,16 @@ const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
           </Card>
         </TabsContent>
 
-        {/* Correlations Tab */}
-        <TabsContent value="correlations" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {correlations.map((correlation, index) => (
-              <Card key={index} className="bg-trading-card border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>{correlation.commodity} ({correlation.symbol})</span>
-                    <div className="flex items-center gap-2">
-                      {getForecastIcon(correlation.forecast)}
-                      <Badge className={correlation.correlation > 0.7 ? 'bg-green-600' : 'bg-yellow-600'}>
-                        {(correlation.correlation * 100).toFixed(0)}%
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Weather Factors */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-300 mb-2">
-                        {lang === 'ar' ? 'العوامل الجوية المؤثرة' : 'Influencing Weather Factors'}
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {correlation.weatherFactors.map((factor, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {factor}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Price Change */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">
-                        {lang === 'ar' ? 'تغيير السعر (7 أيام)' : 'Price Change (7d)'}
-                      </span>
-                      <span className={correlation.priceChange >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* Correlation Strength Bar */}
-                    <div>
-                      <div className="flex justify-between text-sm text-gray-400 mb-1">
-                        <span>{lang === 'ar' ? 'قوة الارتباط' : 'Correlation Strength'}</span>
-                        <span>{(correlation.correlation * 100).toFixed(1)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            correlation.correlation > 0.7 ? 'bg-green-500' :
-                            correlation.correlation > 0.5 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${correlation.correlation * 100}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Impact Level */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">
-                        {lang === 'ar' ? 'مستوى التأثير' : 'Impact Level'}
-                      </span>
-                      <Badge 
-                        variant="outline"
-                        className={
-                          correlation.impact === 'high' ? 'border-red-500 text-red-400' :
-                          correlation.impact === 'medium' ? 'border-yellow-500 text-yellow-400' :
-                          'border-green-500 text-green-400'
-                        }
-                      >
-                        {lang === 'ar' ? 
-                          (correlation.impact === 'high' ? 'عالي' :
-                           correlation.impact === 'medium' ? 'متوسط' : 'منخفض') :
-                          correlation.impact}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Regional Data Tab */}
-        <TabsContent value="regional" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Current Conditions Tab */}
+        <TabsContent value="current" className="space-y-6">
+          {/* Current Weather Data */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {weatherData.map((region, index) => (
               <Card key={index} className="bg-trading-card border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Globe className="h-5 w-5" />
+                      <MapPin className="h-5 w-5" />
                       {region.region}
                     </div>
                     {getWeatherIcon(region.weather.condition)}
@@ -586,8 +575,8 @@ const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
           </div>
         </TabsContent>
 
-        {/* Forecasts Tab */}
-        <TabsContent value="forecasts" className="space-y-6">
+        {/* Forecast Tab */}
+        <TabsContent value="forecast" className="space-y-6">
           {/* Price Impact Forecast Chart */}
           <Card className="bg-trading-card border-gray-700">
             <CardHeader>
@@ -620,6 +609,184 @@ const WeatherData = ({ lang = 'ar' }: WeatherDataProps) => {
           </Card>
 
           {/* Detailed Forecasts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {correlations.map((correlation, index) => (
+              <Card key={index} className="bg-trading-card border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center justify-between">
+                    <span>{correlation.commodity}</span>
+                    <div className="flex items-center gap-2">
+                      {getForecastIcon(correlation.forecast)}
+                      <Badge className={
+                        correlation.forecast === 'bullish' ? 'bg-green-600' :
+                        correlation.forecast === 'bearish' ? 'bg-red-600' : 'bg-gray-600'
+                      }>
+                        {lang === 'ar' ? 
+                          (correlation.forecast === 'bullish' ? 'صاعد' :
+                           correlation.forecast === 'bearish' ? 'هابط' : 'محايد') :
+                          correlation.forecast}
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center p-4 bg-gray-800 rounded-lg">
+                      <p className="text-2xl font-bold text-white">
+                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {lang === 'ar' ? 'تغيير السعر المتوقع' : 'Expected Price Change'}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-gray-300">
+                        {lang === 'ar' ? 'العوامل الرئيسية' : 'Key Factors'}
+                      </h4>
+                      <ul className="space-y-1">
+                        {correlation.weatherFactors.map((factor, idx) => (
+                          <li key={idx} className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="w-1 h-1 bg-blue-400 rounded-full" />
+                            {factor}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
+                      {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Impact Analysis Tab */}
+        <TabsContent value="impact" className="space-y-6">
+          {/* Impact Analysis Chart */}
+          <Card className="bg-trading-card border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">
+                {lang === 'ar' ? 'تحليل تأثير الطقس على الأسعار' : 'Weather Price Impact Analysis'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <ScatterChart data={correlations}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="commodity" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#F9FAFB'
+                    }}
+                  />
+                  <Scatter
+                    dataKey="priceChange"
+                    fill="#3B82F6"
+                    name={lang === 'ar' ? 'تغيير السعر (%)' : 'Price Change (%)'}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Impact Analysis Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {correlations.map((correlation, index) => (
+              <Card key={index} className="bg-trading-card border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center justify-between">
+                    <span>{correlation.commodity}</span>
+                    <div className="flex items-center gap-2">
+                      {getForecastIcon(correlation.forecast)}
+                      <Badge className={
+                        correlation.forecast === 'bullish' ? 'bg-green-600' :
+                        correlation.forecast === 'bearish' ? 'bg-red-600' : 'bg-gray-600'
+                      }>
+                        {lang === 'ar' ? 
+                          (correlation.forecast === 'bullish' ? 'صاعد' :
+                           correlation.forecast === 'bearish' ? 'هابط' : 'محايد') :
+                          correlation.forecast}
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center p-4 bg-gray-800 rounded-lg">
+                      <p className="text-2xl font-bold text-white">
+                        {correlation.priceChange >= 0 ? '+' : ''}{correlation.priceChange.toFixed(1)}%
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {lang === 'ar' ? 'تغيير السعر المتوقع' : 'Expected Price Change'}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-gray-300">
+                        {lang === 'ar' ? 'العوامل الرئيسية' : 'Key Factors'}
+                      </h4>
+                      <ul className="space-y-1">
+                        {correlation.weatherFactors.map((factor, idx) => (
+                          <li key={idx} className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="w-1 h-1 bg-blue-400 rounded-full" />
+                            {factor}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
+                      {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-6">
+          {/* Alerts Chart */}
+          <Card className="bg-trading-card border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">
+                {lang === 'ar' ? 'التنبيهات' : 'Alerts'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={correlations}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="commodity" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#F9FAFB'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="priceChange" 
+                    fill="#3B82F6"
+                    name={lang === 'ar' ? 'تغيير السعر (%)' : 'Price Change (%)'}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Alerts Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {correlations.map((correlation, index) => (
               <Card key={index} className="bg-trading-card border-gray-700">

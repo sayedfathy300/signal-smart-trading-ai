@@ -18,7 +18,7 @@ export function AppLayout({ lang, setLang }: AppLayoutProps) {
               {lang === 'ar' ? 'منصة التداول الذكي' : 'AI Trading Platform'}
             </h1>
           </div>
-          <LanguageSwitcher currentLang={lang} onLanguageChange={setLang} />
+          <LanguageSwitcher currentLang={lang} setLang={setLang} />
         </div>
       </header>
       

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  TreeMap
+  Treemap
 } from 'recharts';
 import { 
   FileText, 
@@ -95,7 +94,6 @@ const PatentAnalysis = ({ lang = 'ar' }: PatentAnalysisProps) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    // محاكاة بيانات براءات الاختراع
     setPatents([
       {
         id: 'US2024001234',
@@ -441,7 +439,7 @@ const PatentAnalysis = ({ lang = 'ar' }: PatentAnalysisProps) => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <TreeMap
+                <Treemap
                   data={technologyTrends.map(tech => ({
                     name: tech.technology,
                     size: tech.hotness,

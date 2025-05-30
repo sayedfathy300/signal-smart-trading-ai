@@ -7,19 +7,32 @@ import DragDropCustomization from '@/components/advanced-ui/DragDropCustomizatio
 import AdvancedExport from '@/components/advanced-ui/AdvancedExport';
 import { Box, Mic, MousePointer, Download } from 'lucide-react';
 
+interface MarketDataPoint {
+  name: string;
+  price: number;
+  volume: number;
+  timestamp: string;
+  signal: 'buy' | 'sell' | 'hold';
+}
+
+interface ExportOptions {
+  format: string;
+  data: any;
+}
+
 const AdvancedUI = () => {
   const [lang] = useState<'en' | 'ar'>('ar');
 
-  const mockData = [
-    { name: 'Jan', value: 400 },
-    { name: 'Feb', value: 300 },
-    { name: 'Mar', value: 600 },
-    { name: 'Apr', value: 800 },
-    { name: 'May', value: 500 },
+  const mockData: MarketDataPoint[] = [
+    { name: 'Jan', price: 400, volume: 1200, timestamp: '2024-01-01', signal: 'buy' },
+    { name: 'Feb', price: 300, volume: 1100, timestamp: '2024-02-01', signal: 'hold' },
+    { name: 'Mar', price: 600, volume: 1500, timestamp: '2024-03-01', signal: 'buy' },
+    { name: 'Apr', price: 800, volume: 1800, timestamp: '2024-04-01', signal: 'sell' },
+    { name: 'May', price: 500, volume: 1300, timestamp: '2024-05-01', signal: 'hold' },
   ];
 
-  const handleExport = (format: string, data: any) => {
-    console.log('Exporting data:', format, data);
+  const handleExport = (options: ExportOptions) => {
+    console.log('Exporting data:', options.format, options.data);
   };
 
   return (
