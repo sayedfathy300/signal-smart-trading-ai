@@ -79,19 +79,19 @@ const VoiceControl: React.FC<VoiceControlProps> = ({ lang, onCommand }) => {
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognitionAPI();
       
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = false;
       recognitionInstance.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
       
-      recognitionInstance.onresult = (event) => {
+      recognitionInstance.onresult = (event: any) => {
         const transcript = event.results[event.results.length - 1][0].transcript.trim();
         processVoiceCommand(transcript);
       };
       
-      recognitionInstance.onerror = (event) => {
+      recognitionInstance.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         toast.error(lang === 'ar' ? 'خطأ في التعرف على الصوت' : 'Speech recognition error');

@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Cube,
+  Box,
   Mic,
   Layout,
   FileText,
@@ -78,7 +77,7 @@ const AdvancedUI = () => {
       id: '3d-viz',
       title: lang === 'ar' ? 'التصور ثلاثي الأبعاد' : '3D Visualization',
       description: lang === 'ar' ? 'رؤية البيانات في بيئة ثلاثية الأبعاد تفاعلية' : 'Interactive 3D data visualization environment',
-      icon: <Cube className="h-5 w-5" />,
+      icon: <Box className="h-5 w-5" />,
       status: 'completed'
     },
     {
@@ -154,7 +153,7 @@ const AdvancedUI = () => {
         <Tabs defaultValue="3d-visualization" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-trading-card">
             <TabsTrigger value="3d-visualization" className="text-sm">
-              <Cube className="h-4 w-4 mr-2" />
+              <Box className="h-4 w-4 mr-2" />
               {lang === 'ar' ? 'ثلاثي الأبعاد' : '3D Viz'}
             </TabsTrigger>
             <TabsTrigger value="voice-control" className="text-sm">
@@ -175,7 +174,7 @@ const AdvancedUI = () => {
             <Card className="bg-trading-card border-gray-800">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Cube className="h-5 w-5" />
+                  <Box className="h-5 w-5" />
                   {lang === 'ar' ? 'التصور ثلاثي الأبعاد للبيانات' : '3D Data Visualization'}
                 </CardTitle>
               </CardHeader>

@@ -1,4 +1,3 @@
-
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Line, Sphere } from '@react-three/drei';
@@ -34,17 +33,14 @@ const MarketDataMesh: React.FC<{ data: MarketDataPoint[] }> = ({ data }) => {
     });
   }, [data]);
 
-  const lineGeometry = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    return geometry;
-  }, [points]);
-
   return (
     <group ref={meshRef}>
       {/* Price line */}
-      <line geometry={lineGeometry}>
-        <lineBasicMaterial color="#00ff88" linewidth={2} />
-      </line>
+      <Line 
+        points={points} 
+        color="#00ff88" 
+        lineWidth={2}
+      />
       
       {/* Data points */}
       {data.map((point, index) => {
