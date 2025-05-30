@@ -16,7 +16,8 @@ import {
   Users,
   Lock,
   Box,
-  Copy
+  Copy,
+  Coins
 } from 'lucide-react';
 import {
   Sidebar,
@@ -118,6 +119,11 @@ export function AppSidebar({ lang }: AppSidebarProps) {
       title: lang === 'ar' ? 'التداول الاجتماعي' : 'Social Trading',
       icon: Copy,
       url: '/social-trading'
+    },
+    {
+      title: lang === 'ar' ? 'تكامل البلوك تشين' : 'Blockchain Integration',
+      icon: Coins,
+      url: '/blockchain-integration'
     }
   ];
 

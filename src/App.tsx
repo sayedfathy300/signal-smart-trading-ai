@@ -22,6 +22,7 @@ import NotFound from '@/pages/NotFound';
 import { AppLayout } from '@/components/AppLayout';
 import InteractiveAnalysis from './pages/InteractiveAnalysis';
 import SocialTrading from './pages/SocialTrading';
+import BlockchainIntegration from './pages/BlockchainIntegration';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useState } from 'react';
@@ -59,6 +60,7 @@ function App() {
                     <Route path="advanced-ui" element={<AdvancedUI />} />
                     <Route path="interactive-analysis" element={<InteractiveAnalysis lang={lang} />} />
                     <Route path="social-trading" element={<SocialTrading lang={lang} />} />
+                    <Route path="blockchain-integration" element={<BlockchainIntegration lang={lang} />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
