@@ -51,7 +51,7 @@ function App() {
                     <Route path="trading-platform" element={<TradingPlatform />} />
                     <Route path="high-frequency-trading" element={<HighFrequencyTrading />} />
                     <Route path="risk-management" element={<RiskManagement />} />
-                    <Route path="alternative-data" element={<AlternativeData />} />
+                    <Route path="alternative-data" element={<AlternativeData lang={lang} />} />
                     <Route path="ai-models" element={<AIModels />} />
                     <Route path="continuous-learning" element={<ContinuousLearning />} />
                     <Route path="explainable-ai" element={<ExplainableAI />} />

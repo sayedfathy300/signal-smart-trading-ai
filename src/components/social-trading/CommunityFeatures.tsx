@@ -1,175 +1,194 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { 
   Users, 
-  MessageSquare, 
-  Heart, 
-  Share2, 
-  Calendar,
-  MapPin,
-  Trophy,
-  Star,
-  TrendingUp,
-  Send,
-  Plus,
+  MessageCircle, 
+  Calendar, 
+  TrendingUp, 
+  Award, 
+  Bell,
   Search,
   Filter,
-  Bell,
-  Settings,
-  UserPlus,
-  DollarSign
+  Plus,
+  Heart,
+  Share2,
+  BookOpen,
+  Timer
 } from 'lucide-react';
 
 interface CommunityFeaturesProps {
   lang?: 'en' | 'ar';
 }
 
+interface Post {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+    verified: boolean;
+    level: string;
+  };
+  content: string;
+  timestamp: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  tags: string[];
+  type: 'analysis' | 'news' | 'strategy' | 'discussion';
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string;
+  members: number;
+  category: string;
+  isPrivate: boolean;
+  recentActivity: string;
+  trending: boolean;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  type: 'webinar' | 'workshop' | 'discussion' | 'contest';
+  participants: number;
+  maxParticipants: number;
+  host: string;
+  status: 'upcoming' | 'live' | 'completed';
+}
+
 const CommunityFeatures = ({ lang = 'ar' }: CommunityFeaturesProps) => {
   const [activeTab, setActiveTab] = useState('feed');
-  const [newPost, setNewPost] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // بيانات تجريبية للمجتمع
-  const communityPosts = [
-    {
-      id: '1',
-      author: {
-        name: lang === 'ar' ? 'أحمد محمد' : 'Ahmed Mohamed',
-        avatar: '/api/placeholder/40/40',
-        level: 'Expert',
-        followers: 1250
+  useEffect(() => {
+    // محاكاة تحميل البيانات
+    setPosts([
+      {
+        id: '1',
+        author: {
+          name: 'أحمد المتداول',
+          avatar: '/api/placeholder/40/40',
+          verified: true,
+          level: 'خبير'
+        },
+        content: 'تحليل متعمق لحركة الذهب اليوم - ارتداد قوي من مستوى الدعم 1950. توقع استمرار الصعود نحو 1980.',
+        timestamp: '2024-03-15 14:30',
+        likes: 45,
+        comments: 12,
+        shares: 8,
+        tags: ['ذهب', 'تحليل_فني', 'توصية'],
+        type: 'analysis'
       },
-      content: lang === 'ar' 
-        ? 'شاركت استراتيجية جديدة للتداول على البيتكوين حققت 15% ربح في الأسبوع الماضي. ما رأيكم؟'
-        : 'Just shared a new Bitcoin trading strategy that made 15% profit last week. What do you think?',
-      timestamp: '2 ساعة',
-      likes: 45,
-      comments: 12,
-      shares: 8,
-      tags: ['Bitcoin', 'Strategy', 'Profit'],
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: '2',
-      author: {
-        name: lang === 'ar' ? 'فاطمة علي' : 'Fatima Ali',
-        avatar: '/api/placeholder/40/40',
-        level: 'Pro',
-        followers: 890
+      {
+        id: '2',
+        author: {
+          name: 'سارة التقنية',
+          avatar: '/api/placeholder/40/40',
+          verified: true,
+          level: 'متقدم'
+        },
+        content: 'استراتيجية جديدة للتداول على المدى القصير باستخدام مؤشر RSI مع Bollinger Bands. نتائج ممتازة في الباك تست!',
+        timestamp: '2024-03-15 13:15',
+        likes: 67,
+        comments: 23,
+        shares: 15,
+        tags: ['استراتيجية', 'مؤشرات_فنية', 'باك_تست'],
+        type: 'strategy'
+      }
+    ]);
+
+    setGroups([
+      {
+        id: '1',
+        name: 'متداولو الذهب المحترفون',
+        description: 'مجموعة مخصصة لتداول الذهب والمعادن الثمينة',
+        members: 1250,
+        category: 'commodities',
+        isPrivate: false,
+        recentActivity: 'منذ 5 دقائق',
+        trending: true
       },
-      content: lang === 'ar'
-        ? 'تحليل فني شامل لزوج EUR/USD - توقع ارتفاع محتمل خلال الأيام القادمة'
-        : 'Comprehensive technical analysis for EUR/USD pair - expecting potential rise in coming days',
-      timestamp: '4 ساعات',
-      likes: 32,
-      comments: 7,
-      shares: 5,
-      tags: ['EUR/USD', 'Technical Analysis', 'Forex']
-    },
-    {
-      id: '3',
-      author: {
-        name: lang === 'ar' ? 'محمد أحمد' : 'Mohamed Ahmed',
-        avatar: '/api/placeholder/40/40',
-        level: 'Advanced',
-        followers: 650
+      {
+        id: '2',
+        name: 'استراتيجيات الفوركس المتقدمة',
+        description: 'تطوير ومشاركة استراتيجيات التداول المتقدمة',
+        members: 890,
+        category: 'forex',
+        isPrivate: true,
+        recentActivity: 'منذ 15 دقيقة',
+        trending: false
+      }
+    ]);
+
+    setEvents([
+      {
+        id: '1',
+        title: 'ورشة عمل: التحليل الفني المتقدم',
+        description: 'تعلم أحدث تقنيات التحليل الفني مع الخبراء',
+        date: '2024-03-20',
+        time: '19:00',
+        type: 'workshop',
+        participants: 45,
+        maxParticipants: 100,
+        host: 'محمد الخبير',
+        status: 'upcoming'
       },
-      content: lang === 'ar'
-        ? 'ما رأيكم في الاستثمار في الذهب كملاذ آمن في ظل التقلبات الحالية؟'
-        : 'What are your thoughts on investing in gold as a safe haven during current volatilities?',
-      timestamp: '6 ساعات',
-      likes: 28,
-      comments: 15,
-      shares: 3,
-      tags: ['Gold', 'Safe Haven', 'Investment']
-    }
-  ];
+      {
+        id: '2',
+        title: 'مسابقة التداول الشهرية',
+        description: 'تنافس مع أفضل المتداولين واربح جوائز قيمة',
+        date: '2024-03-25',
+        time: '09:00',
+        type: 'contest',
+        participants: 234,
+        maxParticipants: 500,
+        host: 'إدارة المنصة',
+        status: 'upcoming'
+      }
+    ]);
+  }, []);
 
-  const tradingGroups = [
-    {
-      id: '1',
-      name: lang === 'ar' ? 'متداولو البيتكوين' : 'Bitcoin Traders',
-      description: lang === 'ar' ? 'مجموعة للنقاش حول تداول البيتكوين والعملات المشفرة' : 'Group for discussing Bitcoin and crypto trading',
-      members: 2456,
-      posts: 1250,
-      image: '/api/placeholder/60/60',
-      category: 'Cryptocurrency',
-      isJoined: true
-    },
-    {
-      id: '2',
-      name: lang === 'ar' ? 'تحليل الفوركس' : 'Forex Analysis',
-      description: lang === 'ar' ? 'تحليلات فنية ومشاركة إشارات الفوركس' : 'Technical analysis and forex signals sharing',
-      members: 1890,
-      posts: 890,
-      image: '/api/placeholder/60/60',
-      category: 'Forex',
-      isJoined: false
-    },
-    {
-      id: '3',
-      name: lang === 'ar' ? 'المبتدئون في التداول' : 'Trading Beginners',
-      description: lang === 'ar' ? 'مساعدة المبتدئين وتعلم أساسيات التداول' : 'Helping beginners learn trading basics',
-      members: 3200,
-      posts: 2100,
-      image: '/api/placeholder/60/60',
-      category: 'Education',
-      isJoined: true
-    }
-  ];
-
-  const upcomingEvents = [
-    {
-      id: '1',
-      title: lang === 'ar' ? 'ندوة تحليل السوق الأسبوعية' : 'Weekly Market Analysis Webinar',
-      date: '2024-01-15',
-      time: '20:00',
-      participants: 450,
-      host: lang === 'ar' ? 'خبير التحليل الفني' : 'Technical Analysis Expert',
-      type: 'Webinar'
-    },
-    {
-      id: '2',
-      title: lang === 'ar' ? 'مسابقة التداول الشهرية' : 'Monthly Trading Competition',
-      date: '2024-01-20',
-      time: '00:00',
-      participants: 1200,
-      host: lang === 'ar' ? 'فريق المنصة' : 'Platform Team',
-      type: 'Competition',
-      prize: '$5000'
-    },
-    {
-      id: '3',
-      title: lang === 'ar' ? 'ورشة استراتيجيات التداول' : 'Trading Strategies Workshop',
-      date: '2024-01-25',
-      time: '18:30',
-      participants: 300,
-      host: lang === 'ar' ? 'المتداول المحترف أحمد' : 'Pro Trader Ahmed',
-      type: 'Workshop'
-    }
-  ];
-
-  const handleLikePost = (postId: string) => {
-    console.log(`Liked post: ${postId}`);
+  const formatArabicNumber = (num: number) => {
+    return num.toLocaleString('ar-EG');
   };
 
-  const handleSharePost = (postId: string) => {
-    console.log(`Shared post: ${postId}`);
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'analysis':
+        return <TrendingUp className="h-4 w-4" />;
+      case 'strategy':
+        return <BookOpen className="h-4 w-4" />;
+      case 'news':
+        return <Bell className="h-4 w-4" />;
+      default:
+        return <MessageCircle className="h-4 w-4" />;
+    }
   };
 
-  const handleJoinGroup = (groupId: string) => {
-    console.log(`Joined group: ${groupId}`);
-  };
-
-  const handleJoinEvent = (eventId: string) => {
-    console.log(`Joined event: ${eventId}`);
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'webinar':
+        return <Users className="h-4 w-4" />;
+      case 'workshop':
+        return <BookOpen className="h-4 w-4" />;
+      case 'contest':
+        return <Award className="h-4 w-4" />;
+      default:
+        return <Calendar className="h-4 w-4" />;
+    }
   };
 
   return (
@@ -178,31 +197,42 @@ const CommunityFeatures = ({ lang = 'ar' }: CommunityFeaturesProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">
-            {lang === 'ar' ? 'مجتمع المتداولين' : 'Trading Community'}
+            {lang === 'ar' ? 'المجتمع التداولي' : 'Trading Community'}
           </h2>
           <p className="text-gray-400">
             {lang === 'ar' 
-              ? 'تفاعل مع المتداولين وشارك في النقاشات والفعاليات'
-              : 'Interact with traders and participate in discussions and events'}
+              ? 'تواصل مع المتداولين وشارك الخبرات والاستراتيجيات'
+              : 'Connect with traders, share experiences and strategies'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="border-gray-600">
-            <Bell className="h-4 w-4 mr-2" />
-            {lang === 'ar' ? 'الإشعارات' : 'Notifications'}
-          </Button>
-          <Button variant="outline" size="sm" className="border-gray-600">
-            <Settings className="h-4 w-4 mr-2" />
-            {lang === 'ar' ? 'الإعدادات' : 'Settings'}
-          </Button>
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          {lang === 'ar' ? 'منشور جديد' : 'New Post'}
+        </Button>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="flex gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder={lang === 'ar' ? 'البحث في المجتمع...' : 'Search community...'}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-trading-card border-gray-600 text-white"
+          />
         </div>
+        <Button variant="outline" className="border-gray-600">
+          <Filter className="h-4 w-4 mr-2" />
+          {lang === 'ar' ? 'تصفية' : 'Filter'}
+        </Button>
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 bg-trading-card">
           <TabsTrigger value="feed" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             {lang === 'ar' ? 'التغذية' : 'Feed'}
           </TabsTrigger>
           <TabsTrigger value="groups" className="flex items-center gap-2">
@@ -213,315 +243,119 @@ const CommunityFeatures = ({ lang = 'ar' }: CommunityFeaturesProps) => {
             <Calendar className="h-4 w-4" />
             {lang === 'ar' ? 'الفعاليات' : 'Events'}
           </TabsTrigger>
-          <TabsTrigger value="leaderboard" className="flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            {lang === 'ar' ? 'المتصدرين' : 'Leaderboard'}
-          </TabsTrigger>
         </TabsList>
 
-        {/* Community Feed */}
-        <TabsContent value="feed" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Feed */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Create Post */}
-              <Card className="bg-trading-card border-gray-800">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar>
-                      <AvatarImage src="/api/placeholder/40/40" />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <Textarea
-                        placeholder={lang === 'ar' ? 'شارك أفكارك التداولية...' : 'Share your trading thoughts...'}
-                        value={newPost}
-                        onChange={(e) => setNewPost(e.target.value)}
-                        className="bg-trading-secondary border-gray-700 text-white resize-none"
-                        rows={3}
-                      />
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" className="text-gray-400">
-                            <MapPin className="h-4 w-4 mr-2" />
-                            {lang === 'ar' ? 'الموقع' : 'Location'}
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-gray-400">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {lang === 'ar' ? 'حدث' : 'Event'}
-                          </Button>
-                        </div>
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
-                          disabled={!newPost.trim()}
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          {lang === 'ar' ? 'نشر' : 'Post'}
-                        </Button>
-                      </div>
+        {/* Feed Tab */}
+        <TabsContent value="feed" className="space-y-4">
+          {posts.map((post) => (
+            <Card key={post.id} className="bg-trading-card border-gray-700">
+              <CardContent className="p-6">
+                {/* Post Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold">
+                        {post.author.name.charAt(0)}
+                      </span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Posts */}
-              {communityPosts.map((post) => (
-                <Card key={post.id} className="bg-trading-card border-gray-800">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar>
-                        <AvatarImage src={post.author.avatar} />
-                        <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-white">{post.author.name}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {post.author.level}
-                          </Badge>
-                          <span className="text-gray-400 text-sm">
-                            {post.author.followers} {lang === 'ar' ? 'متابع' : 'followers'}
-                          </span>
-                          <span className="text-gray-500 text-sm">• {post.timestamp}</span>
-                        </div>
-                        
-                        <p className="text-gray-300 mb-3">{post.content}</p>
-                        
-                        {post.image && (
-                          <img 
-                            src={post.image} 
-                            alt="Post content"
-                            className="w-full h-48 object-cover rounded-lg mb-3"
-                          />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-white">{post.author.name}</h4>
+                        {post.author.verified && (
+                          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs text-white">✓</span>
+                          </div>
                         )}
-                        
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {post.tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs border-gray-600">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleLikePost(post.id)}
-                            className="text-gray-400 hover:text-red-400"
-                          >
-                            <Heart className="h-4 w-4 mr-1" />
-                            {post.likes}
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-gray-400">
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            {post.comments}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSharePost(post.id)}
-                            className="text-gray-400 hover:text-blue-400"
-                          >
-                            <Share2 className="h-4 w-4 mr-1" />
-                            {post.shares}
-                          </Button>
-                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          {post.author.level}
+                        </Badge>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Trending Topics */}
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-400" />
-                    {lang === 'ar' ? 'المواضيع الرائجة' : 'Trending Topics'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {['#Bitcoin', '#DollarIndex', '#Gold', '#EUR_USD', '#TechnicalAnalysis'].map((topic) => (
-                    <div key={topic} className="flex items-center justify-between">
-                      <span className="text-blue-400 cursor-pointer hover:underline">
-                        {topic}
-                      </span>
-                      <span className="text-gray-500 text-xs">
-                        {Math.floor(Math.random() * 100) + 20}k {lang === 'ar' ? 'منشور' : 'posts'}
-                      </span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Suggested Groups */}
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-400" />
-                    {lang === 'ar' ? 'مجموعات مقترحة' : 'Suggested Groups'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {tradingGroups.slice(0, 3).map((group) => (
-                    <div key={group.id} className="flex items-center gap-3">
-                      <img 
-                        src={group.image} 
-                        alt={group.name}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-white text-sm">{group.name}</div>
-                        <div className="text-gray-400 text-xs">
-                          {group.members} {lang === 'ar' ? 'عضو' : 'members'}
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline" className="border-gray-600 text-xs">
-                        {lang === 'ar' ? 'انضم' : 'Join'}
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Trading Groups */}
-        <TabsContent value="groups" className="space-y-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder={lang === 'ar' ? 'البحث في المجموعات...' : 'Search groups...'}
-                className="pl-10 bg-trading-secondary border-gray-700 text-white"
-              />
-            </div>
-            <Button variant="outline" className="border-gray-600">
-              <Filter className="h-4 w-4 mr-2" />
-              {lang === 'ar' ? 'تصفية' : 'Filter'}
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              {lang === 'ar' ? 'إنشاء مجموعة' : 'Create Group'}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tradingGroups.map((group) => (
-              <Card key={group.id} className="bg-trading-card border-gray-800">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <img 
-                      src={group.image} 
-                      alt={group.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-white">{group.name}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {group.category}
-                      </Badge>
+                      <p className="text-sm text-gray-400">{post.timestamp}</p>
                     </div>
                   </div>
-                  
-                  <p className="text-gray-400 text-sm mb-4">{group.description}</p>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <span>
-                        <Users className="h-4 w-4 inline mr-1" />
-                        {group.members.toLocaleString()}
-                      </span>
-                      <span>
-                        <MessageSquare className="h-4 w-4 inline mr-1" />
-                        {group.posts}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    className={`w-full ${group.isJoined 
-                      ? 'bg-gray-600 hover:bg-gray-700' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                    onClick={() => handleJoinGroup(group.id)}
-                  >
-                    {group.isJoined 
-                      ? (lang === 'ar' ? 'منضم' : 'Joined')
-                      : (lang === 'ar' ? 'انضم' : 'Join')
-                    }
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Events */}
-        <TabsContent value="events" className="space-y-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white">
-              {lang === 'ar' ? 'الفعاليات القادمة' : 'Upcoming Events'}
-            </h3>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              {lang === 'ar' ? 'إنشاء فعالية' : 'Create Event'}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {upcomingEvents.map((event) => (
-              <Card key={event.id} className="bg-trading-card border-gray-800">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-white mb-2">{event.title}</h4>
-                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                        <span>
-                          <Calendar className="h-4 w-4 inline mr-1" />
-                          {event.date}
-                        </span>
-                        <span>
-                          <Clock className="h-4 w-4 inline mr-1" />
-                          {event.time}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <span>
-                          <Users className="h-4 w-4 inline mr-1" />
-                          {event.participants} {lang === 'ar' ? 'مشارك' : 'participants'}
-                        </span>
-                        <span>
-                          <Star className="h-4 w-4 inline mr-1" />
-                          {event.host}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="border-gray-600">
-                      {event.type}
+                  <div className="flex items-center gap-1">
+                    {getTypeIcon(post.type)}
+                    <Badge variant="outline" className="text-xs">
+                      {lang === 'ar' ? 
+                        (post.type === 'analysis' ? 'تحليل' : 
+                         post.type === 'strategy' ? 'استراتيجية' : 
+                         post.type === 'news' ? 'أخبار' : 'نقاش') :
+                        post.type}
                     </Badge>
                   </div>
-                  
-                  {event.prize && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <DollarSign className="h-4 w-4 text-green-400" />
-                      <span className="text-green-400 font-medium">
-                        {lang === 'ar' ? 'جائزة:' : 'Prize:'} {event.prize}
-                      </span>
+                </div>
+
+                {/* Post Content */}
+                <p className="text-gray-300 mb-4 leading-relaxed">{post.content}</p>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {post.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Post Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                  <div className="flex items-center gap-6">
+                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-400">
+                      <Heart className="h-4 w-4 mr-1" />
+                      {formatArabicNumber(post.likes)}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400">
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      {formatArabicNumber(post.comments)}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-green-400">
+                      <Share2 className="h-4 w-4 mr-1" />
+                      {formatArabicNumber(post.shares)}
+                    </Button>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-gray-400">
+                    <BookOpen className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+
+        {/* Groups Tab */}
+        <TabsContent value="groups" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {groups.map((group) => (
+              <Card key={group.id} className="bg-trading-card border-gray-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      {group.name}
+                      {group.trending && (
+                        <Badge className="bg-orange-500 text-white">
+                          {lang === 'ar' ? 'رائج' : 'Trending'}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    {group.isPrivate && (
+                      <Badge variant="outline">
+                        {lang === 'ar' ? 'خاص' : 'Private'}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 mb-4">{group.description}</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <span>{formatArabicNumber(group.members)} {lang === 'ar' ? 'عضو' : 'members'}</span>
+                      <span>{group.recentActivity}</span>
                     </div>
-                  )}
-                  
-                  <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => handleJoinEvent(event.id)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    {lang === 'ar' ? 'الانضمام للفعالية' : 'Join Event'}
+                    <Badge variant="secondary">{group.category}</Badge>
+                  </div>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    {lang === 'ar' ? 'انضمام' : 'Join Group'}
                   </Button>
                 </CardContent>
               </Card>
@@ -529,47 +363,80 @@ const CommunityFeatures = ({ lang = 'ar' }: CommunityFeaturesProps) => {
           </div>
         </TabsContent>
 
-        {/* Community Leaderboard */}
-        <TabsContent value="leaderboard" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-400" />
-                {lang === 'ar' ? 'متصدرو المجتمع' : 'Community Leaderboard'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((rank) => (
-                  <div key={rank} className="flex items-center gap-4 p-3 bg-trading-secondary rounded-lg">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                      rank === 1 ? 'bg-yellow-400 text-black' :
-                      rank === 2 ? 'bg-gray-300 text-black' :
-                      rank === 3 ? 'bg-orange-400 text-black' :
-                      'bg-gray-600 text-white'
-                    }`}>
-                      {rank}
+        {/* Events Tab */}
+        <TabsContent value="events" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {events.map((event) => (
+              <Card key={event.id} className="bg-trading-card border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    {getEventIcon(event.type)}
+                    {event.title}
+                    <Badge 
+                      className={
+                        event.status === 'live' ? 'bg-red-500' :
+                        event.status === 'upcoming' ? 'bg-green-500' : 'bg-gray-500'
+                      }
+                    >
+                      {lang === 'ar' ? 
+                        (event.status === 'live' ? 'مباشر' : 
+                         event.status === 'upcoming' ? 'قادم' : 'مكتمل') :
+                        event.status}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-300 mb-4">{event.description}</p>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Calendar className="h-4 w-4" />
+                      <span>{event.date}</span>
+                      <Timer className="h-4 w-4 ml-2" />
+                      <span>{event.time}</span>
                     </div>
-                    <Avatar>
-                      <AvatarImage src="/api/placeholder/40/40" />
-                      <AvatarFallback>U{rank}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">
-                        {lang === 'ar' ? `المتداول ${rank}` : `Trader ${rank}`}
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        {(1000 - rank * 50)} {lang === 'ar' ? 'نقطة' : 'points'}
-                      </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {formatArabicNumber(event.participants)}/{formatArabicNumber(event.maxParticipants)} 
+                        {lang === 'ar' ? ' مشارك' : ' participants'}
+                      </span>
                     </div>
-                    <div className="text-green-400 font-medium">
-                      +{(25 - rank * 2)}% {lang === 'ar' ? 'ربح' : 'profit'}
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <span>{lang === 'ar' ? 'المضيف:' : 'Host:'} {event.host}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(event.participants / event.maxParticipants) * 100}%` 
+                      }}
+                    />
+                  </div>
+
+                  <Button 
+                    className={
+                      event.status === 'live' ? 'w-full bg-red-600 hover:bg-red-700' :
+                      event.status === 'upcoming' ? 'w-full bg-green-600 hover:bg-green-700' :
+                      'w-full bg-gray-600 hover:bg-gray-700'
+                    }
+                    disabled={event.status === 'completed'}
+                  >
+                    {lang === 'ar' ? 
+                      (event.status === 'live' ? 'انضمام الآن' : 
+                       event.status === 'upcoming' ? 'تسجيل الاشتراك' : 'مكتمل') :
+                      (event.status === 'live' ? 'Join Now' : 
+                       event.status === 'upcoming' ? 'Register' : 'Completed')}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

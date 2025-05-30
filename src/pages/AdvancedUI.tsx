@@ -10,9 +10,16 @@ import { Box, Mic, MousePointer, Download } from 'lucide-react';
 const AdvancedUI = () => {
   const [lang] = useState<'en' | 'ar'>('ar');
 
-  const handleVoiceCommand = (command: string, params?: any) => {
-    console.log('Voice command received:', command, params);
-    // Handle voice commands here
+  const mockData = [
+    { name: 'Jan', value: 400 },
+    { name: 'Feb', value: 300 },
+    { name: 'Mar', value: 600 },
+    { name: 'Apr', value: 800 },
+    { name: 'May', value: 500 },
+  ];
+
+  const handleExport = (format: string, data: any) => {
+    console.log('Exporting data:', format, data);
   };
 
   return (
@@ -53,7 +60,7 @@ const AdvancedUI = () => {
         </TabsList>
 
         <TabsContent value="3d-visualization">
-          <ThreeDVisualization lang={lang} />
+          <ThreeDVisualization lang={lang} data={mockData} />
         </TabsContent>
 
         <TabsContent value="voice-control">
@@ -65,7 +72,7 @@ const AdvancedUI = () => {
         </TabsContent>
 
         <TabsContent value="export">
-          <AdvancedExport lang={lang} />
+          <AdvancedExport lang={lang} onExport={handleExport} />
         </TabsContent>
       </Tabs>
     </div>
