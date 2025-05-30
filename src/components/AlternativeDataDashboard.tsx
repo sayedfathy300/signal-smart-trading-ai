@@ -97,15 +97,15 @@ const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps
 
   const blockchainData = Array.from(data.blockchain_metrics.values()).map(blockchain => ({
     network: blockchain.network,
-    tvl: blockchain.metrics.total_value_locked / 1000000000, // Convert to billions
-    addresses: blockchain.metrics.active_addresses / 1000, // Convert to thousands
-    sentiment: blockchain.defi_analysis.market_sentiment + 100 // Convert to 0-200 scale
+    tvl: blockchain.metrics.total_value_locked / 1000000000,
+    addresses: blockchain.metrics.active_addresses / 1000,
+    sentiment: blockchain.defi_analysis.market_sentiment + 100
   }));
 
   const futuresData = Array.from(data.futures_data.values()).slice(0, 6).map(future => ({
     symbol: future.symbol,
     price: future.current_price,
-    volume: future.volume / 1000, // Convert to thousands
+    volume: future.volume / 1000,
     openInterest: future.open_interest / 1000,
     basis: future.basis
   }));
@@ -115,13 +115,6 @@ const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps
     { name: lang === 'ar' ? 'متوسطة' : 'Medium', value: data.real_time_alerts.filter(a => a.severity === 'medium').length, color: '#F59E0B' },
     { name: lang === 'ar' ? 'منخفضة' : 'Low', value: data.real_time_alerts.filter(a => a.severity === 'low').length, color: '#10B981' }
   ];
-
-  const getBarColor = (entry: any) => {
-    if (selectedDataSource === 'satellite') {
-      return entry.growth > 0 ? "#10B981" : "#EF4444";
-    }
-    return "#3B82F6";
-  };
 
   return (
     <div className="space-y-6">
@@ -279,37 +272,39 @@ const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={alertsData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {alertsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                  labelStyle={{ color: '#F3F4F6' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-4 space-y-2">
-              {alertsData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-sm text-gray-300">{item.name}</span>
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={alertsData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {alertsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                    labelStyle={{ color: '#F3F4F6' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2">
+                {alertsData.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-sm text-gray-300">{item.name}</span>
+                    </div>
+                    <span className="text-white font-medium">{item.value}</span>
                   </div>
-                  <span className="text-white font-medium">{item.value}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
