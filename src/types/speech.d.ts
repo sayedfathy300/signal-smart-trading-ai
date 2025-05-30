@@ -12,23 +12,27 @@ interface SpeechRecognition extends EventTarget {
   lang: string;
   start(): void;
   stop(): void;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: () => void;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
 }
 
-interface SpeechRecognitionEvent {
+interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
+  resultIndex: number;
 }
 
 interface SpeechRecognitionResultList {
-  length: number;
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
   [index: number]: SpeechRecognitionResult;
 }
 
 interface SpeechRecognitionResult {
-  length: number;
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
   [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
 }
 
 interface SpeechRecognitionAlternative {
@@ -36,8 +40,9 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
-interface SpeechRecognitionErrorEvent {
+interface SpeechRecognitionErrorEvent extends Event {
   error: string;
+  message: string;
 }
 
 declare var SpeechRecognition: {

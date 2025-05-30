@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -107,6 +106,11 @@ export function AppSidebar({ lang }: AppSidebarProps) {
       title: lang === 'ar' ? 'الواجهة المتقدمة' : 'Advanced UI',
       icon: Box,
       url: '/advanced-ui'
+    },
+    {
+      title: lang === 'ar' ? 'التحليل التفاعلي' : 'Interactive Analysis',
+      icon: Target,
+      url: '/interactive-analysis'
     }
   ];
 
