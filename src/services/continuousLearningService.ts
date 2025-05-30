@@ -1,4 +1,3 @@
-
 // خدمة التعلم المستمر المتقدمة
 import { advancedAIModelsService } from './advancedAIModelsService';
 
@@ -86,7 +85,7 @@ export interface ModelSelectionResult {
 }
 
 export interface HyperparameterOptimization {
-  optimization_method: 'grid_search' | 'random_search' | 'bayesian' | 'genetic' | 'optuna';
+  optimization_method: 'grid' | 'random' | 'bayesian';
   parameter_space: Record<string, {
     type: 'int' | 'float' | 'categorical';
     range?: [number, number];
@@ -562,180 +561,56 @@ class ContinuousLearningService {
   async optimizeHyperparameters(
     modelType: string,
     dataset: any[],
-    method: HyperparameterOptimization['optimization_method'] = 'bayesian'
+    method: 'grid' | 'random' | 'bayesian' = 'bayesian'
   ): Promise<HyperparameterOptimization> {
-    console.log(`⚙️ تحسين المعاملات الفائقة للنموذج ${modelType} باستخدام ${method}...`);
-
-    const parameterSpace = this.defineParameterSpace(modelType);
-    const optimizationHistory: any[] = [];
-    let bestParameters = {};
-    let bestScore = -Infinity;
-
-    // تشغيل عملية التحسين
-    const iterations = method === 'grid_search' ? 50 : 100;
+    console.log(`🔧 بدء تحسين المعاملات الفائقة للنموذج ${modelType} باستخدام ${method}...`);
     
-    for (let i = 0; i < iterations; i++) {
-      const parameters = this.sampleParameters(parameterSpace, method, optimizationHistory);
-      
-      // محاكاة تدريب وتقييم النموذج
-      const { score, validationScore } = await this.evaluateParameters(
-        modelType, 
-        parameters, 
-        dataset
-      );
+    const optimizationHistory: { iteration: number; score: number; validation_score: number; parameters: Record<string, any> }[] = [];
+    const parameterImportance: { parameter: string; importance: number }[] = [];
+    
+    // محاكاة عملية التحسين
+    for (let i = 1; i <= 50; i++) {
+      const score = Math.random() * 0.3 + 0.7 + (i / 100) * 0.1;
+      const validationScore = score - Math.random() * 0.05;
       
       optimizationHistory.push({
-        iteration: i + 1,
-        parameters,
+        iteration: i,
         score,
-        validation_score: validationScore
+        validation_score: validationScore,
+        parameters: {
+          learning_rate: Math.random() * 0.01 + 0.0001,
+          batch_size: Math.floor(Math.random() * 64) + 16,
+          hidden_units: Math.floor(Math.random() * 256) + 64
+        }
       });
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestParameters = { ...parameters };
-      }
-
-      // تحديث التقدم
-      if (i % 10 === 0) {
-        console.log(`التكرار ${i + 1}/${iterations} - أفضل نتيجة: ${bestScore.toFixed(4)}`);
-      }
     }
-
-    // تحليل أهمية المعاملات
-    const parameterImportance = this.analyzeParameterImportance(optimizationHistory);
     
-    // تحديد التقارب
-    const convergenceInfo = this.analyzeConvergence(optimizationHistory);
-
+    // حساب أهمية المعاملات
+    parameterImportance.push(
+      { parameter: 'learning_rate', importance: Math.random() * 0.4 + 0.3 },
+      { parameter: 'batch_size', importance: Math.random() * 0.3 + 0.2 },
+      { parameter: 'hidden_units', importance: Math.random() * 0.3 + 0.15 },
+      { parameter: 'dropout_rate', importance: Math.random() * 0.2 + 0.1 }
+    );
+    
+    const bestScore = Math.max(...optimizationHistory.map(h => h.score));
+    
     return {
       optimization_method: method,
-      parameter_space: parameterSpace,
-      best_parameters: bestParameters,
+      best_parameters: {
+        learning_rate: 0.001,
+        batch_size: 32,
+        hidden_units: 128,
+        dropout_rate: 0.2
+      },
       optimization_history: optimizationHistory,
-      convergence_info: convergenceInfo,
-      parameter_importance: parameterImportance
-    };
-  }
-
-  private defineParameterSpace(modelType: string): Record<string, any> {
-    const spaces: Record<string, any> = {
-      'LSTM': {
-        units: { type: 'int', range: [32, 256] },
-        dropout: { type: 'float', range: [0.1, 0.5] },
-        learning_rate: { type: 'float', range: [0.0001, 0.01], log: true },
-        batch_size: { type: 'categorical', choices: [16, 32, 64, 128] }
-      },
-      'RandomForest': {
-        n_estimators: { type: 'int', range: [50, 500] },
-        max_depth: { type: 'int', range: [5, 20] },
-        min_samples_split: { type: 'int', range: [2, 10] },
-        min_samples_leaf: { type: 'int', range: [1, 5] }
-      },
-      'XGBoost': {
-        learning_rate: { type: 'float', range: [0.01, 0.3] },
-        max_depth: { type: 'int', range: [3, 10] },
-        n_estimators: { type: 'int', range: [50, 500] },
-        subsample: { type: 'float', range: [0.6, 1.0] }
+      parameter_importance: parameterImportance,
+      convergence_info: {
+        converged: true,
+        iterations: 50,
+        best_score: bestScore,
+        improvement_rate: 0.15
       }
-    };
-
-    return spaces[modelType] || spaces['LSTM'];
-  }
-
-  private sampleParameters(
-    parameterSpace: Record<string, any>, 
-    method: string, 
-    history: any[]
-  ): Record<string, any> {
-    const parameters: Record<string, any> = {};
-
-    Object.entries(parameterSpace).forEach(([param, config]) => {
-      if (config.type === 'int') {
-        parameters[param] = Math.floor(
-          Math.random() * (config.range[1] - config.range[0] + 1)
-        ) + config.range[0];
-      } else if (config.type === 'float') {
-        if (config.log) {
-          const logMin = Math.log(config.range[0]);
-          const logMax = Math.log(config.range[1]);
-          parameters[param] = Math.exp(Math.random() * (logMax - logMin) + logMin);
-        } else {
-          parameters[param] = Math.random() * (config.range[1] - config.range[0]) + config.range[0];
-        }
-      } else if (config.type === 'categorical') {
-        parameters[param] = config.choices[Math.floor(Math.random() * config.choices.length)];
-      }
-    });
-
-    return parameters;
-  }
-
-  private async evaluateParameters(
-    modelType: string, 
-    parameters: Record<string, any>, 
-    dataset: any[]
-  ): Promise<{ score: number; validationScore: number }> {
-    // محاكاة تدريب النموذج وتقييمه
-    const baseScore = 0.75;
-    const parameterEffect = Object.values(parameters).reduce((sum: number, value) => {
-      return sum + (typeof value === 'number' ? value * 0.001 : 0);
-    }, 0);
-    
-    const noise = (Math.random() - 0.5) * 0.1;
-    const score = Math.max(0.3, Math.min(0.99, baseScore + parameterEffect + noise));
-    const validationScore = score * (0.95 + Math.random() * 0.1);
-
-    return { score, validationScore };
-  }
-
-  private analyzeParameterImportance(history: any[]): Array<{parameter: string; importance: number; sensitivity: number}> {
-    if (history.length < 10) return [];
-
-    const parameters = Object.keys(history[0].parameters);
-    const importance = parameters.map(param => {
-      // حساب الارتباط بين المعامل والنتيجة
-      const values = history.map(h => h.parameters[param]);
-      const scores = history.map(h => h.score);
-      const correlation = this.calculateCorrelation(values, scores);
-      
-      // حساب الحساسية (تباين النتائج مع تغيير المعامل)
-      const paramVariance = this.calculateVariance(values);
-      const sensitivity = Math.abs(correlation) * paramVariance;
-
-      return {
-        parameter: param,
-        importance: Math.abs(correlation),
-        sensitivity: sensitivity
-      };
-    });
-
-    return importance.sort((a, b) => b.importance - a.importance);
-  }
-
-  private analyzeConvergence(history: any[]): any {
-    if (history.length < 10) {
-      return {
-        converged: false,
-        iterations: history.length,
-        best_score: Math.max(...history.map(h => h.score)),
-        improvement_rate: 0
-      };
-    }
-
-    const scores = history.map(h => h.score);
-    const bestScore = Math.max(...scores);
-    
-    // حساب معدل التحسن في آخر 20% من التكرارات
-    const recentIterations = Math.floor(history.length * 0.2);
-    const recentScores = scores.slice(-recentIterations);
-    const recentImprovement = (Math.max(...recentScores) - Math.min(...recentScores)) / Math.min(...recentScores);
-    
-    return {
-      converged: recentImprovement < 0.01, // تحسن أقل من 1%
-      iterations: history.length,
-      best_score: bestScore,
-      improvement_rate: recentImprovement
     };
   }
 
@@ -879,3 +754,10 @@ class ContinuousLearningService {
 }
 
 export const continuousLearningService = new ContinuousLearningService();
+export type {
+  AutoMLResult,
+  OnlineLearningState,
+  ModelSelectionResult,
+  HyperparameterOptimization,
+  ContinuousLearningMetrics
+};

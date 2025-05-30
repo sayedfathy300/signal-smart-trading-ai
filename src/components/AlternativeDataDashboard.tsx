@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +113,17 @@ const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps
     { name: lang === 'ar' ? 'عالية' : 'High', value: data.real_time_alerts.filter(a => a.severity === 'high').length, color: '#EF4444' },
     { name: lang === 'ar' ? 'متوسطة' : 'Medium', value: data.real_time_alerts.filter(a => a.severity === 'medium').length, color: '#F59E0B' },
     { name: lang === 'ar' ? 'منخفضة' : 'Low', value: data.real_time_alerts.filter(a => a.severity === 'low').length, color: '#10B981' }
+  ];
+
+  const googleTrendsData = [
+    { keyword: 'Bitcoin', trend: 10 },
+    { keyword: 'Ethereum', trend: 20 },
+    { keyword: 'Dogecoin', trend: 15 },
+    { keyword: 'Cardano', trend: 30 },
+    { keyword: 'Solana', trend: 25 },
+    { keyword: 'Polkadot', trend: 18 },
+    { keyword: 'Avalanche', trend: 22 },
+    { keyword: 'Binance', trend: 17 }
   ];
 
   return (
@@ -306,6 +316,29 @@ const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Search Trends */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">
+              {lang === 'ar' ? 'اتجاهات البحث' : 'Search Trends'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={googleTrendsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="keyword" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                  labelStyle={{ color: '#F3F4F6' }}
+                />
+                <Line type="monotone" dataKey="trend" stroke="#10B981" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
