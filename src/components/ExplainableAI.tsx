@@ -4,80 +4,122 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { 
   Brain, 
-  TrendingUp, 
   Target, 
-  AlertCircle, 
-  BarChart3, 
-  PieChart,
+  BarChart3,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Eye,
+  Search,
   Lightbulb,
-  RefreshCw,
-  Download,
-  Settings,
+  Shield,
   Zap
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, TreeMap } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Cell, Treemap } from 'recharts';
 import { cn } from '@/lib/utils';
-import { explainableAIService, SHAPExplanation, FeatureImportance, DecisionExplanation } from '@/services/explainableAIService';
+import { explainableAIService, DecisionExplanation, FeatureImportance, BiasAnalysis, CounterfactualAnalysis } from '@/services/explainableAIService';
+import { toast } from 'sonner';
 
 interface ExplainableAIProps {
   lang?: 'en' | 'ar';
 }
 
 const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
-  const [shapData, setShapData] = useState<SHAPExplanation | null>(null);
+  const [explanation, setExplanation] = useState<DecisionExplanation | null>(null);
   const [featureImportance, setFeatureImportance] = useState<FeatureImportance[]>([]);
-  const [decisionExplanation, setDecisionExplanation] = useState<DecisionExplanation | null>(null);
+  const [biasAnalysis, setBiasAnalysis] = useState<BiasAnalysis | null>(null);
+  const [counterfactual, setCounterfactual] = useState<CounterfactualAnalysis | null>(null);
+  const [selectedModel, setSelectedModel] = useState('lstm_model');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('LSTM_EUR_USD');
 
   useEffect(() => {
-    loadExplanations();
-  }, [selectedModel]);
+    loadInitialData();
+  }, []);
 
-  const loadExplanations = async () => {
+  const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [shap, features, decision] = await Promise.all([
-        explainableAIService.getSHAPExplanation(selectedModel, 'EUR/USD'),
+      const [explanationData, featureData, biasData, counterfactualData] = await Promise.all([
+        explainableAIService.explainDecision(selectedModel, { price: 50000, volume: 1000000 }),
         explainableAIService.getFeatureImportance(selectedModel),
-        explainableAIService.explainDecision(selectedModel, 'BUY', 'EUR/USD')
+        explainableAIService.analyzeBias(selectedModel),
+        explainableAIService.generateCounterfactual(selectedModel, { price: 50000, volume: 1000000 })
       ]);
       
-      setShapData(shap);
-      setFeatureImportance(features);
-      setDecisionExplanation(decision);
+      setExplanation(explanationData);
+      setFeatureImportance(featureData);
+      setBiasAnalysis(biasData);
+      setCounterfactual(counterfactualData);
     } catch (error) {
-      console.error('Error loading explanations:', error);
+      console.error('خطأ في تحميل بيانات الذكاء الاصطناعي التفسيري:', error);
+      toast.error('فشل في تحميل البيانات');
     } finally {
       setLoading(false);
     }
   };
 
-  // بيانات للرسوم البيانية
-  const featureImportanceData = featureImportance.map(item => ({
-    feature: item.feature,
-    importance: item.importance * 100,
-    category: item.category
-  }));
+  const handleExplainDecision = async () => {
+    setLoading(true);
+    try {
+      const result = await explainableAIService.explainDecision(selectedModel, { 
+        price: 50000, 
+        volume: 1000000,
+        rsi: 65,
+        macd: 0.5 
+      });
+      setExplanation(result);
+      toast.success('تم تفسير القرار بنجاح! 🧠');
+    } catch (error) {
+      toast.error('فشل في تفسير القرار');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const biasAnalysisData = [
-    { factor: 'Gender', bias: 0.02, threshold: 0.05, status: 'safe' },
-    { factor: 'Age', bias: 0.08, threshold: 0.05, status: 'warning' },
-    { factor: 'Location', bias: 0.01, threshold: 0.05, status: 'safe' },
-    { factor: 'Income', bias: 0.12, threshold: 0.05, status: 'critical' }
-  ];
+  const handleAnalyzeBias = async () => {
+    setLoading(true);
+    try {
+      const result = await explainableAIService.analyzeBias(selectedModel);
+      setBiasAnalysis(result);
+      toast.success('تم تحليل التحيز بنجاح! 🔍');
+    } catch (error) {
+      toast.error('فشل في تحليل التحيز');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const decisionTreeData = [
-    { level: 'Root', condition: 'RSI > 70', samples: 1000, value: 0.6 },
-    { level: 'Level 1', condition: 'MACD > 0', samples: 400, value: 0.8 },
-    { level: 'Level 1', condition: 'MACD <= 0', samples: 600, value: 0.4 },
-    { level: 'Level 2', condition: 'Volume > Avg', samples: 200, value: 0.9 },
-    { level: 'Level 2', condition: 'Volume <= Avg', samples: 200, value: 0.7 }
-  ];
+  const getDecisionColor = (decision: string) => {
+    switch (decision.toLowerCase()) {
+      case 'buy': return 'text-trading-up';
+      case 'sell': return 'text-trading-down';
+      case 'hold': return 'text-gray-400';
+      default: return 'text-white';
+    }
+  };
 
-  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const getDecisionIcon = (decision: string) => {
+    switch (decision.toLowerCase()) {
+      case 'buy': return <TrendingUp className="h-5 w-5 text-trading-up" />;
+      case 'sell': return <TrendingUp className="h-5 w-5 text-trading-down transform rotate-180" />;
+      case 'hold': return <Target className="h-5 w-5 text-gray-400" />;
+      default: return <Brain className="h-5 w-5 text-white" />;
+    }
+  };
+
+  const getBiasLevelColor = (level: string) => {
+    switch (level) {
+      case 'low': return 'text-trading-up';
+      case 'medium': return 'text-yellow-400';
+      case 'high': return 'text-trading-down';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   return (
     <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
@@ -88,158 +130,275 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
             {lang === 'ar' ? 'الذكاء الاصطناعي التفسيري' : 'Explainable AI'}
           </h1>
           <p className="text-gray-400">
-            {lang === 'ar' ? 'فهم وتفسير قرارات الذكاء الاصطناعي بوضوح' : 'Understanding and explaining AI decisions clearly'}
+            {lang === 'ar' ? 'فهم وتفسير قرارات الذكاء الاصطناعي بشفافية كاملة' : 'Understanding AI decisions with complete transparency'}
           </p>
         </div>
         
-        <div className="flex gap-3">
-          <Button
-            onClick={loadExplanations}
-            disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700"
+        <div className="flex items-center gap-4">
+          <select 
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="bg-trading-card border border-gray-600 rounded px-3 py-2 text-white"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? (lang === 'ar' ? 'جاري التحديث...' : 'Loading...') : (lang === 'ar' ? 'تحديث' : 'Refresh')}
-          </Button>
+            <option value="lstm_model">LSTM Model</option>
+            <option value="xgboost_model">XGBoost Model</option>
+            <option value="random_forest">Random Forest</option>
+            <option value="neural_network">Neural Network</option>
+          </select>
           
-          <Button variant="outline" className="border-trading-up text-trading-up">
-            <Download className="h-4 w-4 mr-2" />
-            {lang === 'ar' ? 'تصدير التقرير' : 'Export Report'}
+          <Button
+            onClick={loadInitialData}
+            disabled={loading}
+            className="bg-trading-primary hover:bg-blue-600"
+          >
+            <Eye className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'جاري التحديث...' : 'تحديث التحليل'}
           </Button>
         </div>
       </div>
 
-      {/* نظرة عامة سريعة */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* بطاقة القرار الحالي */}
+      {explanation && (
         <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Brain className="h-8 w-8 text-purple-500" />
-              <div>
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              {getDecisionIcon(explanation.decision)}
+              قرار النموذج الحالي
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                <div className={cn("text-2xl font-bold", getDecisionColor(explanation.decision))}>
+                  {explanation.decision.toUpperCase()}
+                </div>
+                <div className="text-sm text-gray-400">القرار</div>
+              </div>
+              
+              <div className="text-center p-4 bg-trading-secondary rounded-lg">
                 <div className="text-2xl font-bold text-white">
-                  {shapData ? (shapData.confidence * 100).toFixed(1) : '94.2'}%
+                  {(explanation.confidence * 100).toFixed(1)}%
                 </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'ثقة النموذج' : 'Model Confidence'}
+                <div className="text-sm text-gray-400">الثقة</div>
+              </div>
+              
+              <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                <div className="text-2xl font-bold text-blue-400">
+                  {explanation.factors.length}
                 </div>
+                <div className="text-sm text-gray-400">العوامل المؤثرة</div>
+              </div>
+              
+              <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                <div className="text-2xl font-bold text-purple-400">
+                  {explanation.model}
+                </div>
+                <div className="text-sm text-gray-400">النموذج</div>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Target className="h-8 w-8 text-trading-up" />
-              <div>
-                <div className="text-2xl font-bold text-white">
-                  {featureImportance.length || 12}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'العوامل المؤثرة' : 'Key Features'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-8 w-8 text-yellow-500" />
-              <div>
-                <div className="text-2xl font-bold text-white">2</div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'تحذيرات التحيز' : 'Bias Warnings'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Lightbulb className="h-8 w-8 text-blue-400" />
-              <div>
-                <div className="text-2xl font-bold text-white">
-                  {decisionExplanation?.reasoning.length || 5}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'أسباب القرار' : 'Decision Reasons'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       {/* المحتوى الرئيسي */}
-      <Tabs defaultValue="shap" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-trading-card">
+      <Tabs defaultValue="decision" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6 bg-trading-card">
+          <TabsTrigger value="decision">تفسير القرار</TabsTrigger>
+          <TabsTrigger value="features">أهمية المتغيرات</TabsTrigger>
           <TabsTrigger value="shap">تحليل SHAP</TabsTrigger>
-          <TabsTrigger value="features">أهمية العوامل</TabsTrigger>
-          <TabsTrigger value="decisions">تفسير القرارات</TabsTrigger>
           <TabsTrigger value="bias">تحليل التحيز</TabsTrigger>
+          <TabsTrigger value="counterfactual">التحليل المقارن</TabsTrigger>
           <TabsTrigger value="tree">شجرة القرار</TabsTrigger>
         </TabsList>
+
+        {/* تفسير القرار */}
+        <TabsContent value="decision" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-yellow-400" />
+                  تفسير مفصل للقرار
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={handleExplainDecision}
+                    disabled={loading}
+                    className="w-full bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    <Brain className="h-4 w-4 mr-2" />
+                    {loading ? 'جاري التحليل...' : 'تفسير القرار'}
+                  </Button>
+
+                  {explanation && (
+                    <div className="space-y-3">
+                      <h4 className="font-bold text-white">العوامل المؤثرة:</h4>
+                      {explanation.factors.map((factor, idx) => (
+                        <div key={idx} className="p-3 bg-trading-secondary rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-white">{factor.name}</span>
+                            <Badge 
+                              variant={factor.impact > 0 ? 'default' : 'destructive'}
+                              className={factor.impact > 0 ? 'bg-trading-up' : 'bg-trading-down'}
+                            >
+                              {factor.impact > 0 ? '+' : ''}{factor.impact.toFixed(3)}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-400">{factor.description}</div>
+                          <Progress 
+                            value={Math.abs(factor.impact) * 100} 
+                            className="mt-2 h-2"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-trading-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white">توزيع العوامل</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {explanation && (
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          {COLORS.map((color, index) => (
+                            <pattern key={index} id={`pattern-${index}`} patternUnits="userSpaceOnUse" width="4" height="4">
+                              <rect width="4" height="4" fill={color} />
+                            </pattern>
+                          ))}
+                        </defs>
+                        <PieChart
+                          data={explanation.factors.map(factor => ({
+                            name: factor.name,
+                            value: Math.abs(factor.impact)
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={120}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {explanation.factors.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </PieChart>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1F2937', 
+                            border: '1px solid #374151',
+                            borderRadius: '8px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* أهمية المتغيرات */}
+        <TabsContent value="features" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-400" />
+                أهمية المتغيرات (Feature Importance)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={featureImportance} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis type="number" stroke="#9CA3AF" />
+                    <YAxis dataKey="name" type="category" stroke="#9CA3AF" width={80} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1F2937', 
+                        border: '1px solid #374151',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="importance" fill="#3B82F6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {featureImportance.slice(0, 3).map((feature, idx) => (
+              <Card key={idx} className="bg-trading-card border-gray-800">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-white mb-2">{feature.name}</div>
+                    <div className="text-2xl font-bold text-blue-400 mb-2">
+                      {(feature.importance * 100).toFixed(1)}%
+                    </div>
+                    <Progress value={feature.importance * 100} className="h-2" />
+                    <div className="text-xs text-gray-400 mt-2">{feature.description}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
         {/* تحليل SHAP */}
         <TabsContent value="shap" className="space-y-6">
           <Card className="bg-trading-card border-gray-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
-                {lang === 'ar' ? 'تحليل SHAP للقرارات' : 'SHAP Decision Analysis'}
+                <Target className="h-5 w-5 text-trading-up" />
+                تحليل SHAP (SHapley Additive exPlanations)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {shapData && (
-                <div className="space-y-6">
-                  {/* معلومات SHAP الأساسية */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-white">
-                        {shapData.prediction.toFixed(4)}
+              <div className="space-y-4">
+                <p className="text-gray-400">
+                  تحليل SHAP يوضح مساهمة كل متغير في القرار النهائي بطريقة دقيقة ومفصلة
+                </p>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-white">قيم SHAP للمتغيرات:</h4>
+                    {featureImportance.map((feature, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
+                        <span className="text-white">{feature.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "font-bold",
+                            feature.importance > 0.1 ? 'text-trading-up' : 
+                            feature.importance > 0.05 ? 'text-yellow-400' : 'text-gray-400'
+                          )}>
+                            {feature.importance.toFixed(4)}
+                          </div>
+                          <div className={cn(
+                            "w-4 h-4 rounded",
+                            feature.importance > 0.1 ? 'bg-trading-up' : 
+                            feature.importance > 0.05 ? 'bg-yellow-400' : 'bg-gray-400'
+                          )} />
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'التوقع النهائي' : 'Final Prediction'}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-trading-up">
-                        +{shapData.positiveContribution.toFixed(3)}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'التأثير الإيجابي' : 'Positive Impact'}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-trading-down">
-                        {shapData.negativeContribution.toFixed(3)}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'التأثير السلبي' : 'Negative Impact'}
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* رسم SHAP */}
-                  <div className="h-96">
+                  <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={shapData.featureContributions.map(item => ({
-                        feature: item.feature,
-                        value: item.shapValue,
-                        absValue: Math.abs(item.shapValue)
-                      }))}>
+                      <BarChart data={featureImportance}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis 
-                          dataKey="feature" 
-                          stroke="#9CA3AF"
-                          angle={-45}
-                          textAnchor="end"
-                          height={80}
-                        />
+                        <XAxis dataKey="name" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
                         <YAxis stroke="#9CA3AF" />
                         <Tooltip 
                           contentStyle={{ 
@@ -248,243 +407,14 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
                             borderRadius: '8px'
                           }}
                         />
-                        <Bar 
-                          dataKey="value" 
-                          fill="#3B82F6"
-                          name={lang === 'ar' ? 'قيمة SHAP' : 'SHAP Value'}
-                        />
+                        <Bar dataKey="importance" fill="#22C55E" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-
-                  {/* تفسير SHAP */}
-                  <div className="bg-trading-secondary p-4 rounded-lg">
-                    <h3 className="text-lg font-bold text-white mb-3">
-                      {lang === 'ar' ? 'تفسير قيم SHAP:' : 'SHAP Values Explanation:'}
-                    </h3>
-                    <div className="space-y-2">
-                      {shapData.featureContributions.slice(0, 5).map((item, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="text-gray-300">{item.feature}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "font-bold",
-                              item.shapValue > 0 ? 'text-trading-up' : 'text-trading-down'
-                            )}>
-                              {item.shapValue > 0 ? '+' : ''}{item.shapValue.toFixed(4)}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              ({lang === 'ar' ? 'مساهمة' : 'contribution'})
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* أهمية العوامل */}
-        <TabsContent value="features" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'أهمية العوامل' : 'Feature Importance'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={featureImportanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis 
-                        dataKey="feature" 
-                        stroke="#9CA3AF"
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                      />
-                      <YAxis stroke="#9CA3AF" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Bar dataKey="importance" fill="#22C55E" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* توزيع العوامل */}
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white">
-                  {lang === 'ar' ? 'توزيع العوامل حسب الفئة' : 'Feature Distribution by Category'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={[
-                          { name: 'Technical', value: featureImportance.filter(f => f.category === 'technical').length },
-                          { name: 'Fundamental', value: featureImportance.filter(f => f.category === 'fundamental').length },
-                          { name: 'Sentiment', value: featureImportance.filter(f => f.category === 'sentiment').length },
-                          { name: 'Alternative', value: featureImportance.filter(f => f.category === 'alternative').length }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                      >
-                        {featureImportanceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* قائمة العوامل التفصيلية */}
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {lang === 'ar' ? 'تفاصيل العوامل' : 'Feature Details'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {featureImportance.map((feature, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ 
-                        backgroundColor: feature.category === 'technical' ? '#22C55E' :
-                                       feature.category === 'fundamental' ? '#3B82F6' :
-                                       feature.category === 'sentiment' ? '#F59E0B' : '#EF4444'
-                      }} />
-                      <div>
-                        <div className="font-medium text-white">{feature.feature}</div>
-                        <div className="text-sm text-gray-400">
-                          {feature.category} • Impact: {(feature.importance * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="border-gray-600">
-                      {(feature.importance * 100).toFixed(1)}%
-                    </Badge>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* تفسير القرارات */}
-        <TabsContent value="decisions" className="space-y-6">
-          {decisionExplanation && (
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Target className="h-5 w-5 text-trading-up" />
-                  {lang === 'ar' ? 'تفسير القرار' : 'Decision Explanation'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* معلومات القرار */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <Badge 
-                        className={cn(
-                          "text-lg px-4 py-2",
-                          decisionExplanation.decision === 'BUY' ? 'bg-trading-up' :
-                          decisionExplanation.decision === 'SELL' ? 'bg-trading-down' : 'bg-gray-600'
-                        )}
-                      >
-                        {decisionExplanation.decision}
-                      </Badge>
-                      <div className="text-sm text-gray-400 mt-2">
-                        {lang === 'ar' ? 'القرار المتخذ' : 'Decision Made'}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-white">
-                        {(decisionExplanation.confidence * 100).toFixed(1)}%
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'مستوى الثقة' : 'Confidence Level'}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-white">
-                        {decisionExplanation.reasoning.length}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'عدد الأسباب' : 'Number of Reasons'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* أسباب القرار */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4">
-                      {lang === 'ar' ? 'أسباب القرار:' : 'Decision Reasoning:'}
-                    </h3>
-                    <div className="space-y-3">
-                      {decisionExplanation.reasoning.map((reason, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-trading-secondary rounded-lg">
-                          <div className="w-6 h-6 bg-trading-up rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-white">{reason}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* العوامل المؤثرة */}
-                  <div>
-                    <h3 className="text-lg font-bold text-white mb-4">
-                      {lang === 'ar' ? 'العوامل المؤثرة في القرار:' : 'Contributing Factors:'}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {decisionExplanation.contributingFactors.map((factor, index) => (
-                        <div key={index} className="p-3 bg-trading-secondary rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-white">{factor.factor}</span>
-                            <Badge variant="outline" className="border-gray-600">
-                              {(factor.weight * 100).toFixed(1)}%
-                            </Badge>
-                          </div>
-                          <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div 
-                              className="bg-trading-up h-2 rounded-full"
-                              style={{ width: `${factor.weight * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         {/* تحليل التحيز */}
@@ -492,62 +422,163 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
           <Card className="bg-trading-card border-gray-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-yellow-500" />
-                {lang === 'ar' ? 'تحليل التحيز في النموذج' : 'Model Bias Analysis'}
+                <Shield className="h-5 w-5 text-red-400" />
+                تحليل التحيز في النموذج
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {biasAnalysisData.map((item, index) => (
-                  <div key={index} className="p-4 bg-trading-secondary rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-white">{item.factor}</span>
-                        <Badge 
-                          variant="outline"
-                          className={cn(
-                            item.status === 'safe' ? 'border-trading-up text-trading-up' :
-                            item.status === 'warning' ? 'border-yellow-500 text-yellow-500' :
-                            'border-trading-down text-trading-down'
-                          )}
-                        >
-                          {item.status}
-                        </Badge>
+                <Button 
+                  onClick={handleAnalyzeBias}
+                  disabled={loading}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  {loading ? 'جاري التحليل...' : 'تحليل التحيز'}
+                </Button>
+
+                {biasAnalysis && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                        <div className={cn("text-2xl font-bold", getBiasLevelColor(biasAnalysis.overallBiasLevel))}>
+                          {biasAnalysis.overallBiasLevel === 'low' ? 'منخفض' :
+                           biasAnalysis.overallBiasLevel === 'medium' ? 'متوسط' : 'عالي'}
+                        </div>
+                        <div className="text-sm text-gray-400">مستوى التحيز العام</div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-white">
-                          {(item.bias * 100).toFixed(1)}%
+                      
+                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                        <div className="text-2xl font-bold text-blue-400">
+                          {(biasAnalysis.fairnessScore * 100).toFixed(1)}%
                         </div>
-                        <div className="text-xs text-gray-400">
-                          Threshold: {(item.threshold * 100).toFixed(1)}%
+                        <div className="text-sm text-gray-400">نقاط العدالة</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
+                        <div className="text-2xl font-bold text-white">
+                          {biasAnalysis.detectedBiases.length}
                         </div>
+                        <div className="text-sm text-gray-400">أنواع التحيز المكتشفة</div>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-700 rounded-full h-3">
-                      <div 
-                        className={cn(
-                          "h-3 rounded-full",
-                          item.status === 'safe' ? 'bg-trading-up' :
-                          item.status === 'warning' ? 'bg-yellow-500' :
-                          'bg-trading-down'
-                        )}
-                        style={{ width: `${(item.bias / 0.15) * 100}%` }}
-                      />
+
+                    <div className="space-y-3">
+                      <h4 className="font-bold text-white">أنواع التحيز المكتشفة:</h4>
+                      {biasAnalysis.detectedBiases.map((bias, idx) => (
+                        <div key={idx} className="p-4 bg-trading-secondary rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-white">{bias.type}</span>
+                            <Badge 
+                              variant={bias.severity === 'high' ? 'destructive' : 
+                                      bias.severity === 'medium' ? 'default' : 'secondary'}
+                              className={
+                                bias.severity === 'high' ? 'bg-trading-down' :
+                                bias.severity === 'medium' ? 'bg-yellow-600' : 'bg-trading-up'
+                              }
+                            >
+                              {bias.severity === 'high' ? 'عالي' :
+                               bias.severity === 'medium' ? 'متوسط' : 'منخفض'}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-300 mb-2">{bias.description}</div>
+                          <div className="text-xs text-blue-400">
+                            التوصية: {bias.recommendation}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="mt-6 p-4 bg-blue-900/30 border border-blue-700 rounded-lg">
-                <h4 className="font-bold text-blue-300 mb-2">
-                  {lang === 'ar' ? 'توصيات تقليل التحيز:' : 'Bias Reduction Recommendations:'}
-                </h4>
-                <ul className="space-y-1 text-blue-200 text-sm">
-                  <li>• زيادة تنوع بيانات التدريب</li>
-                  <li>• تطبيق تقنيات توازن البيانات</li>
-                  <li>• مراجعة دورية لأداء النموذج</li>
-                  <li>• استخدام معايير عدالة متعددة</li>
-                </ul>
+        {/* التحليل المقارن */}
+        <TabsContent value="counterfactual" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Zap className="h-5 w-5 text-purple-400" />
+                التحليل المقارن (Counterfactual Analysis)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-gray-400">
+                  يوضح كيف يمكن تغيير المدخلات للحصول على قرار مختلف
+                </p>
+
+                {counterfactual && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-white">السيناريو الحالي:</h4>
+                        <div className="p-4 bg-trading-secondary rounded-lg">
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(counterfactual.originalInput).map(([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span className="text-gray-400">{key}:</span>
+                                <span className="text-white font-mono">{JSON.stringify(value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-600">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">القرار:</span>
+                              <span className={cn("font-bold", getDecisionColor(counterfactual.originalDecision))}>
+                                {counterfactual.originalDecision.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-white">السيناريو البديل:</h4>
+                        <div className="p-4 bg-trading-secondary rounded-lg">
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(counterfactual.counterfactualInput).map(([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span className="text-gray-400">{key}:</span>
+                                <span className="text-white font-mono">{JSON.stringify(value)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-600">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">القرار:</span>
+                              <span className={cn("font-bold", getDecisionColor(counterfactual.counterfactualDecision))}>
+                                {counterfactual.counterfactualDecision.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="font-bold text-white">التغييرات المطلوبة:</h4>
+                      {counterfactual.requiredChanges.map((change, idx) => (
+                        <div key={idx} className="p-3 bg-trading-secondary rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white">{change.feature}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-400">
+                                {change.originalValue} → {change.newValue}
+                              </span>
+                              <Badge variant="outline" className="border-purple-400 text-purple-400">
+                                {change.changeType}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">{change.explanation}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -558,50 +589,24 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
           <Card className="bg-trading-card border-gray-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-trading-up" />
-                {lang === 'ar' ? 'تصور شجرة القرار' : 'Decision Tree Visualization'}
+                <BarChart3 className="h-5 w-5 text-green-400" />
+                مخطط شجرة القرار
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <TreeMap
-                    data={decisionTreeData}
-                    dataKey="samples"
-                    aspectRatio={4/3}
-                    stroke="#374151"
-                    fill="#3B82F6"
-                  />
-                </ResponsiveContainer>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h4 className="font-bold text-white">
-                    {lang === 'ar' ? 'قواعد القرار الرئيسية:' : 'Main Decision Rules:'}
-                  </h4>
-                  {decisionTreeData.slice(0, 3).map((node, index) => (
-                    <div key={index} className="p-3 bg-trading-secondary rounded-lg">
-                      <div className="font-medium text-white">{node.condition}</div>
-                      <div className="text-sm text-gray-400">
-                        Samples: {node.samples} | Value: {node.value.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-bold text-white">
-                    {lang === 'ar' ? 'إحصائيات الشجرة:' : 'Tree Statistics:'}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-trading-secondary rounded-lg text-center">
-                      <div className="text-lg font-bold text-white">5</div>
-                      <div className="text-xs text-gray-400">Levels</div>
-                    </div>
-                    <div className="p-3 bg-trading-secondary rounded-lg text-center">
-                      <div className="text-lg font-bold text-white">85%</div>
-                      <div className="text-xs text-gray-400">Accuracy</div>
+              <div className="space-y-4">
+                <p className="text-gray-400">
+                  تمثيل بصري لعملية اتخاذ القرار في النموذج
+                </p>
+                
+                <div className="h-96 bg-trading-secondary rounded-lg p-4">
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <BarChart3 className="h-16 w-16 text-green-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-bold text-white mb-2">شجرة القرار التفاعلية</h3>
+                      <p className="text-gray-400">
+                        تصور تفاعلي لمسار اتخاذ القرار في النموذج
+                      </p>
                     </div>
                   </div>
                 </div>
