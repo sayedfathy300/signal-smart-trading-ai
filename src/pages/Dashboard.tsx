@@ -12,13 +12,17 @@ import {
   Bot,
   Brain,
   Zap,
-  Target
+  Target,
+  Building2,
+  Globe,
+  Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { CandlestickChart } from '@/components/CandlestickChart';
 import { CurrencyPairs } from '@/components/CurrencyPairs';
 import { TradingControls } from '@/components/TradingControls';
+import { FundamentalAnalysis } from '@/components/FundamentalAnalysis';
 import { aiTradingService, AISignal } from '@/services/aiTradingService';
 
 const Dashboard = () => {
@@ -220,9 +224,11 @@ const Dashboard = () => {
 
       {/* المحتوى الرئيسي */}
       <Tabs defaultValue="charts" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 bg-trading-card">
+        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
           <TabsTrigger value="charts">الرسوم البيانية المتقدمة</TabsTrigger>
           <TabsTrigger value="pairs">أزواج العملات</TabsTrigger>
+          <TabsTrigger value="fundamental">التحليل الأساسي</TabsTrigger>
+          <TabsTrigger value="economics">المؤشرات الاقتصادية</TabsTrigger>
         </TabsList>
 
         <TabsContent value="charts" className="space-y-6">
@@ -236,7 +242,6 @@ const Dashboard = () => {
             <CardContent>
               <CandlestickChart 
                 symbol={selectedPair}
-                height={600}
                 lang="ar"
               />
             </CardContent>
@@ -248,6 +253,40 @@ const Dashboard = () => {
             lang="ar"
             onSelectPair={setSelectedPair}
           />
+        </TabsContent>
+
+        <TabsContent value="fundamental" className="space-y-6">
+          <FundamentalAnalysis 
+            symbol="AAPL"
+            lang="ar"
+          />
+        </TabsContent>
+
+        <TabsContent value="economics" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                المؤشرات الاقتصادية العالمية
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Building2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">التحليل الاقتصادي المتقدم</h3>
+                <p className="text-gray-400 mb-4">
+                  تابع المؤشرات الاقتصادية العالمية وتأثيرها على الأسواق
+                </p>
+                <Button 
+                  onClick={() => toast.info('سيتم إضافة المزيد من المؤشرات قريباً')}
+                  className="bg-trading-primary hover:bg-blue-600"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  عرض التقويم الاقتصادي الكامل
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
