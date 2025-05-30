@@ -1,431 +1,331 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Satellite, 
-  Wifi, 
-  Cpu, 
-  TrendingUp, 
-  AlertCircle,
-  CheckCircle,
-  MapPin,
-  Activity,
-  DollarSign,
-  BarChart3
-} from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { alternativeDataService, type ComprehensiveAlternativeData } from '@/services/alternativeDataService';
+} from "recharts";
+import { Satellite, Radio, CreditCard, BarChart3, Package } from 'lucide-react';
 
-interface AlternativeDataDashboardProps {
-  lang?: 'en' | 'ar';
+interface DataSource {
+  name: string;
+  status: 'active' | 'inactive';
+  lastUpdate: string;
+  reliability: number;
+  description: string;
 }
 
-const AlternativeDataDashboard = ({ lang = 'ar' }: AlternativeDataDashboardProps) => {
-  const [data, setData] = useState<ComprehensiveAlternativeData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedDataSource, setSelectedDataSource] = useState<'satellite' | 'iot' | 'blockchain' | 'futures'>('satellite');
+interface SatelliteData {
+  date: string;
+  activity: number;
+}
+
+const AlternativeDataDashboard = ({ lang = 'ar' }: { lang?: 'en' | 'ar' }) => {
+  const [dataSources, setDataSources] = useState<DataSource[]>([
+    {
+      name: 'Satellite Imagery',
+      status: 'active',
+      lastUpdate: '2024-03-15 14:30',
+      reliability: 95,
+      description: 'Provides real-time imagery of agricultural fields and infrastructure.'
+    },
+    {
+      name: 'Social Media Sentiment',
+      status: 'inactive',
+      lastUpdate: '2024-03-15 14:00',
+      reliability: 88,
+      description: 'Tracks public sentiment towards companies and products.'
+    },
+    {
+      name: 'Credit Card Transactions',
+      status: 'active',
+      lastUpdate: '2024-03-15 13:45',
+      reliability: 92,
+      description: 'Aggregated transaction data for consumer spending analysis.'
+    },
+  ]);
+
+  const [satelliteData, setSatelliteData] = useState<SatelliteData[]>([
+    { date: '2024-03-01', activity: 1200 },
+    { date: '2024-03-02', activity: 1300 },
+    { date: '2024-03-03', activity: 1250 },
+    { date: '2024-03-04', activity: 1400 },
+    { date: '2024-03-05', activity: 1350 },
+    { date: '2024-03-06', activity: 1500 },
+    { date: '2024-03-07', activity: 1450 },
+  ]);
 
   useEffect(() => {
-    loadAlternativeData();
+    // Simulate fetching data from an API
+    const fetchData = async () => {
+      // Replace with actual API endpoint
+      // const response = await fetch('/api/alternative-data');
+      // const data = await response.json();
+      // setDataSources(data.dataSources);
+      // setSatelliteData(data.satelliteData);
+    };
+
+    fetchData();
   }, []);
 
-  const loadAlternativeData = async () => {
-    try {
-      setLoading(true);
-      const alternativeData = await alternativeDataService.getComprehensiveAlternativeData();
-      setData(alternativeData);
-    } catch (error) {
-      console.error('خطأ في تحميل البيانات البديلة:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Activity className="h-8 w-8 animate-spin mx-auto mb-2 text-trading-primary" />
-          <p className="text-gray-400">
-            {lang === 'ar' ? 'جاري تحميل البيانات البديلة...' : 'Loading alternative data...'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="text-center text-gray-400">
-        {lang === 'ar' ? 'لا توجد بيانات متاحة' : 'No data available'}
-      </div>
-    );
-  }
-
-  // إعداد بيانات الرسوم البيانية
-  const satelliteChartData = Array.from(data.satellite_data.values()).slice(0, 8).map(item => ({
-    name: item.location.name,
-    activity: item.metrics.economic_activity,
-    growth: item.trends.monthly_change,
-    confidence: item.confidence_score * 100
-  }));
-
-  const iotSensorData = Array.from(data.iot_sensors.values()).slice(0, 6).map(sensor => ({
-    type: sensor.sensor_type,
-    value: sensor.readings.value,
-    accuracy: sensor.readings.accuracy * 100,
-    correlation: sensor.correlations.correlation_strength * 100
-  }));
-
-  const blockchainData = Array.from(data.blockchain_metrics.values()).map(blockchain => ({
-    network: blockchain.network,
-    tvl: blockchain.metrics.total_value_locked / 1000000000,
-    addresses: blockchain.metrics.active_addresses / 1000,
-    sentiment: blockchain.defi_analysis.market_sentiment + 100
-  }));
-
-  const futuresData = Array.from(data.futures_data.values()).slice(0, 6).map(future => ({
-    symbol: future.symbol,
-    price: future.current_price,
-    volume: future.volume / 1000,
-    openInterest: future.open_interest / 1000,
-    basis: future.basis
-  }));
-
-  const alertsData = [
-    { name: lang === 'ar' ? 'عالية' : 'High', value: data.real_time_alerts.filter(a => a.severity === 'high').length, color: '#EF4444' },
-    { name: lang === 'ar' ? 'متوسطة' : 'Medium', value: data.real_time_alerts.filter(a => a.severity === 'medium').length, color: '#F59E0B' },
-    { name: lang === 'ar' ? 'منخفضة' : 'Low', value: data.real_time_alerts.filter(a => a.severity === 'low').length, color: '#10B981' }
-  ];
-
-  const googleTrendsData = [
-    { keyword: 'Bitcoin', trend: 10 },
-    { keyword: 'Ethereum', trend: 20 },
-    { keyword: 'Dogecoin', trend: 15 },
-    { keyword: 'Cardano', trend: 30 },
-    { keyword: 'Solana', trend: 25 },
-    { keyword: 'Polkadot', trend: 18 },
-    { keyword: 'Avalanche', trend: 22 },
-    { keyword: 'Binance', trend: 17 }
-  ];
-
   return (
-    <div className="space-y-6">
-      {/* Quick Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Satellite className="h-5 w-5 text-blue-400" />
-              <div>
-                <p className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'مواقع القمر الصناعي' : 'Satellite Locations'}
-                </p>
-                <p className="text-xl font-bold text-white">{data.satellite_data.size}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Wifi className="h-5 w-5 text-green-400" />
-              <div>
-                <p className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'أجهزة IoT' : 'IoT Sensors'}
-                </p>
-                <p className="text-xl font-bold text-white">{data.iot_sensors.size}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Cpu className="h-5 w-5 text-purple-400" />
-              <div>
-                <p className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'شبكات البلوك تشين' : 'Blockchain Networks'}
-                </p>
-                <p className="text-xl font-bold text-white">{data.blockchain_metrics.size}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-yellow-400" />
-              <div>
-                <p className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'العقود الآجلة' : 'Futures Contracts'}
-                </p>
-                <p className="text-xl font-bold text-white">{data.futures_data.size}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-6 space-y-6 bg-gradient-to-br from-trading-bg via-gray-900 to-black min-h-screen">
+      {/* Header Section */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-white mb-4">
+          {lang === 'ar' ? 'لوحة بيانات البيانات البديلة' : 'Alternative Data Dashboard'}
+        </h1>
+        <p className="text-xl text-gray-300">
+          {lang === 'ar'
+            ? 'تحليل متعمق لمصادر البيانات البديلة لاتخاذ قرارات استثمارية مستنيرة'
+            : 'In-depth analysis of alternative data sources for informed investment decisions'}
+        </p>
       </div>
-
-      {/* Data Source Selection */}
-      <div className="flex flex-wrap gap-2">
-        {['satellite', 'iot', 'blockchain', 'futures'].map((source) => (
-          <Button
-            key={source}
-            variant={selectedDataSource === source ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedDataSource(source as typeof selectedDataSource)}
-            className={selectedDataSource === source ? "bg-trading-primary" : ""}
-          >
-            {lang === 'ar' ? 
-              (source === 'satellite' ? 'أقمار صناعية' : 
-               source === 'iot' ? 'إنترنت الأشياء' :
-               source === 'blockchain' ? 'بلوك تشين' : 'عقود آجلة') :
-              source.charAt(0).toUpperCase() + source.slice(1)
-            }
-          </Button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Main Chart */}
-        <Card className="bg-trading-card border-gray-800">
+      
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stat Card 1 */}
+        <Card className="bg-trading-card border-gray-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              {selectedDataSource === 'satellite' && (lang === 'ar' ? 'النشاط الاقتصادي للأقمار الصناعية' : 'Satellite Economic Activity')}
-              {selectedDataSource === 'iot' && (lang === 'ar' ? 'قراءات أجهزة IoT' : 'IoT Sensor Readings')}
-              {selectedDataSource === 'blockchain' && (lang === 'ar' ? 'مقاييس البلوك تشين' : 'Blockchain Metrics')}
-              {selectedDataSource === 'futures' && (lang === 'ar' ? 'أسعار العقود الآجلة' : 'Futures Prices')}
+              <CreditCard className="w-5 h-5 text-green-400" />
+              {lang === 'ar' ? 'إنفاق المستهلك' : 'Consumer Spending'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              {selectedDataSource === 'satellite' && (
-                <BarChart data={satelliteChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Bar dataKey="activity" fill="#3B82F6" />
-                </BarChart>
-              )}
-              {selectedDataSource === 'iot' && (
-                <AreaChart data={iotSensorData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="type" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Area type="monotone" dataKey="value" stroke="#10B981" fill="#10B981" fillOpacity={0.3} />
-                </AreaChart>
-              )}
-              {selectedDataSource === 'blockchain' && (
-                <LineChart data={blockchainData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="network" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Line type="monotone" dataKey="tvl" stroke="#8B5CF6" strokeWidth={2} />
-                </LineChart>
-              )}
-              {selectedDataSource === 'futures' && (
-                <BarChart data={futuresData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="symbol" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Bar dataKey="price" fill="#F59E0B" />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
+            <div className="text-2xl font-bold text-white">
+              {lang === 'ar' ? '2.5 مليون دولار' : '$2.5M'}
+            </div>
+            <p className="text-gray-400">
+              {lang === 'ar' ? 'إجمالي الإنفاق الأسبوعي' : 'Total weekly spending'}
+            </p>
           </CardContent>
         </Card>
 
-        {/* Alerts Distribution */}
-        <Card className="bg-trading-card border-gray-800">
+        {/* Stat Card 2 */}
+        <Card className="bg-trading-card border-gray-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              {lang === 'ar' ? 'توزيع التنبيهات' : 'Alert Distribution'}
+              <BarChart3 className="w-5 h-5 text-blue-400" />
+              {lang === 'ar' ? 'نمو الإيرادات' : 'Revenue Growth'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">+12.3%</div>
+            <p className="text-gray-400">
+              {lang === 'ar' ? 'نمو الإيرادات الشهري' : 'Monthly revenue growth'}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Stat Card 3 */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Package className="w-5 h-5 text-orange-400" />
+              {lang === 'ar' ? 'حجم الشحن' : 'Shipping Volume'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">15,420</div>
+            <p className="text-gray-400">
+              {lang === 'ar' ? 'الشحنات الأسبوعية' : 'Weekly shipments'}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Stat Card 4 */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Satellite className="w-5 h-5 text-purple-400" />
+              {lang === 'ar' ? 'تغطية الأقمار الصناعية' : 'Satellite Coverage'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">85%</div>
+            <p className="text-gray-400">
+              {lang === 'ar' ? 'تغطية الأراضي الزراعية' : 'Agricultural land coverage'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Satellite Data Analysis */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Satellite className="w-5 h-5 text-blue-400" />
+              {lang === 'ar' ? 'تحليل البيانات الفضائية' : 'Satellite Data Analysis'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={alertsData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {alertsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                    labelStyle={{ color: '#F3F4F6' }}
+                <AreaChart data={satelliteData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="date" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#F9FAFB'
+                    }}
                   />
-                </PieChart>
+                  <Area
+                    type="monotone"
+                    dataKey="activity"
+                    stroke="#3B82F6"
+                    fill="#3B82F6"
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
-              <div className="mt-4 space-y-2">
-                {alertsData.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-sm text-gray-300">{item.name}</span>
-                    </div>
-                    <span className="text-white font-medium">{item.value}</span>
-                  </div>
-                ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Social Media Sentiment Analysis */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Radio className="w-5 h-5 text-green-400" />
+              {lang === 'ar' ? 'تحليل المشاعر على وسائل التواصل الاجتماعي' : 'Social Media Sentiment Analysis'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-400">
+                {lang === 'ar'
+                  ? 'المشاعر الإيجابية تزيد بنسبة 15٪ مقارنة بالشهر الماضي'
+                  : 'Positive sentiment up 15% compared to last month'}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">
+                  {lang === 'ar' ? 'المشاعر الإيجابية' : 'Positive Sentiment'}
+                </span>
+                <span className="text-green-400 font-medium">78%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: '78%' }}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">
+                  {lang === 'ar' ? 'المشاعر السلبية' : 'Negative Sentiment'}
+                </span>
+                <span className="text-red-400 font-medium">22%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: '22%' }}
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Search Trends */}
-        <Card className="bg-trading-card border-gray-800">
+        {/* Credit Card Transaction Analysis */}
+        <Card className="bg-trading-card border-gray-700">
           <CardHeader>
-            <CardTitle className="text-white">
-              {lang === 'ar' ? 'اتجاهات البحث' : 'Search Trends'}
+            <CardTitle className="text-white flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-orange-400" />
+              {lang === 'ar' ? 'تحليل معاملات بطاقات الائتمان' : 'Credit Card Transaction Analysis'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={googleTrendsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="keyword" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                  labelStyle={{ color: '#F3F4F6' }}
+            <div className="space-y-4">
+              <p className="text-gray-400">
+                {lang === 'ar'
+                  ? 'زيادة بنسبة 10٪ في الإنفاق على المطاعم مقارنة بالشهر الماضي'
+                  : '10% increase in spending on restaurants compared to last month'}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">
+                  {lang === 'ar' ? 'الإنفاق على المطاعم' : 'Restaurant Spending'}
+                </span>
+                <span className="text-blue-400 font-medium">
+                  {lang === 'ar' ? '1.2 مليون دولار' : '$1.2M'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: '60%' }}
                 />
-                <Line type="monotone" dataKey="trend" stroke="#10B981" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">
+                  {lang === 'ar' ? 'الإنفاق على الترفيه' : 'Entertainment Spending'}
+                </span>
+                <span className="text-blue-400 font-medium">
+                  {lang === 'ar' ? '800 ألف دولار' : '$800K'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: '40%' }}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Insights */}
-      <Card className="bg-trading-card border-gray-800">
+      {/* Real-time Data Sources */}
+      <Card className="bg-trading-card border-gray-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            {lang === 'ar' ? 'الرؤى الحديثة' : 'Recent Insights'}
+            <Radio className="w-5 h-5 text-green-400" />
+            {lang === 'ar' ? 'مصادر البيانات في الوقت الفعلي' : 'Real-time Data Sources'}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {data.insights.slice(0, 5).map((insight, index) => (
-              <div key={index} className="p-4 bg-gray-800 rounded-lg">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={
-                      insight.market_impact === 'high' ? 'bg-red-500' :
-                      insight.market_impact === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
-                    }>
-                      {insight.market_impact}
-                    </Badge>
-                    <Badge variant="outline">
-                      {insight.data_source}
-                    </Badge>
-                  </div>
-                  <span className="text-xs text-gray-400">{insight.timeframe}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dataSources.map((source, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-white font-medium">{source.name}</h4>
+                  <Badge
+                    variant={source.status === 'active' ? 'default' : 'secondary'}
+                    className={source.status === 'active' ? 'bg-green-600' : 'bg-gray-600'}
+                  >
+                    {source.status === 'active' 
+                      ? (lang === 'ar' ? 'نشط' : 'Active')
+                      : (lang === 'ar' ? 'غير نشط' : 'Inactive')
+                    }
+                  </Badge>
                 </div>
-                <p className="text-sm text-gray-300 mb-2">{insight.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-400">
-                      {lang === 'ar' ? 'الثقة:' : 'Confidence:'}
-                    </span>
-                    <span className="text-xs text-trading-primary">
-                      {(insight.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  {insight.risk_reward_ratio && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-400">R/R:</span>
-                      <span className="text-xs text-white">{insight.risk_reward_ratio.toFixed(1)}</span>
-                    </div>
-                  )}
+                <p className="text-gray-400 text-sm mb-2">{source.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">
+                    {lang === 'ar' ? 'آخر تحديث:' : 'Last Update:'} {source.lastUpdate}
+                  </span>
+                  <span className="text-blue-400 font-medium">{source.reliability}%</span>
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* Real-time Alerts */}
-      {data.real_time_alerts.length > 0 && (
-        <Card className="bg-trading-card border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              {lang === 'ar' ? 'التنبيهات الفورية' : 'Real-time Alerts'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {data.real_time_alerts.slice(0, 4).map((alert, index) => (
-                <div key={index} className="p-3 bg-gray-800 rounded-lg border-l-4" style={{
-                  borderLeftColor: alert.severity === 'high' ? '#EF4444' : 
-                                   alert.severity === 'medium' ? '#F59E0B' : '#10B981'
-                }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <Badge className={
-                      alert.severity === 'high' ? 'bg-red-500' :
-                      alert.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                    }>
-                      {alert.severity}
-                    </Badge>
-                    <span className="text-xs text-gray-400">
-                      {new Date(alert.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-300">{alert.message}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

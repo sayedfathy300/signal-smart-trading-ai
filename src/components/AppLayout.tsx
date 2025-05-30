@@ -1,14 +1,11 @@
 
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout() {
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   
   // Set the lang attribute on the html element for proper font family selection
@@ -25,8 +22,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <LanguageSwitcher currentLang={lang} setLang={setLang} />
           </header>
           <main className="flex-1 overflow-auto bg-trading-bg">
-            {/* Pass the language to all child components */}
-            {React.cloneElement(children as React.ReactElement, { lang })}
+            <Outlet context={{ lang }} />
           </main>
         </div>
       </div>

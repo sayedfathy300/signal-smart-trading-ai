@@ -1,4 +1,3 @@
-
 // خدمة الذكاء الاصطناعي التفسيري - Explainable AI Service
 // تتضمن SHAP، Feature Importance، وتفسير القرارات
 
@@ -422,10 +421,3 @@ class ExplainableAIService {
 }
 
 export const explainableAIService = new ExplainableAIService();
-export type {
-  SHAPValue,
-  FeatureImportance,
-  DecisionExplanation,
-  ModelExplanation,
-  ExplainabilityReport
-};

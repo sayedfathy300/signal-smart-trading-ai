@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +53,7 @@ interface ExplainableAIProps {
   lang?: 'en' | 'ar';
 }
 
-const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
+const ExplainableAI = ({ lang = 'ar' }: { lang?: 'en' | 'ar' }) => {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<ExplainabilityReport | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('LSTM');
@@ -137,17 +136,19 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
 
   const selectedModelData = report.model_explanations.find(m => m.model_name === selectedModel);
 
-  const shapChartData = selectedModelData?.shap_values.slice(0, 10).map(shap => ({
+  const shapData = selectedModelData?.shap_values.slice(0, 10).map(shap => ({
     feature: shap.feature,
     contribution: shap.contribution,
     importance: shap.importance * 100
   })) || [];
 
-  const featureImportanceData = report.global_feature_importance.slice(0, 12).map(f => ({
+  const featureImportance = report.global_feature_importance.slice(0, 12).map(f => ({
     feature: f.feature,
     importance: f.importance * 100,
     category: f.category
   }));
+
+  const decisionTreeData = report.decision_tree_visualization.nodes;
 
   const biasData = [
     { name: lang === 'ar' ? 'التكافؤ الديموغرافي' : 'Demographic Parity', value: report.bias_analysis.demographic_parity * 100 },
@@ -157,7 +158,7 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-trading-bg via-gray-900 to-black min-h-screen">
       {/* Header Controls */}
       <Card className="bg-trading-card border-gray-800">
         <CardContent className="p-4">
@@ -241,6 +242,108 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
           </Card>
         </div>
       )}
+
+      {/* Main Dashboard */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* SHAP Values Visualization */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-400" />
+              {lang === 'ar' ? 'قيم SHAP للخصائص' : 'SHAP Feature Values'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={shapData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis type="number" stroke="#9CA3AF" />
+                  <YAxis dataKey="feature" type="category" stroke="#9CA3AF" width={100} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#F9FAFB'
+                    }}
+                  />
+                  <Bar dataKey="contribution" fill="#3B82F6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Decision Tree Visualization */}
+        <Card className="bg-trading-card border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <GitBranch className="w-5 h-5 text-green-400" />
+              {lang === 'ar' ? 'شجرة القرار' : 'Decision Tree'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={300}>
+                <TreemapChart
+                  width={400}
+                  height={300}
+                  data={decisionTreeData}
+                  dataKey="value"
+                  aspectRatio={4 / 3}
+                  stroke="#374151"
+                  fill="#3B82F6"
+                />
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Feature Importance Analysis */}
+      <Card className="bg-trading-card border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-orange-400" />
+            {lang === 'ar' ? 'تحليل أهمية الخصائص' : 'Feature Importance Analysis'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {featureImportance.map((feature, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-white font-medium">{feature.feature}</span>
+                    <Badge
+                      variant="outline"
+                      className={`
+                        ${feature.category === 'technical' ? 'border-blue-500 text-blue-400' : ''}
+                        ${feature.category === 'fundamental' ? 'border-green-500 text-green-400' : ''}
+                        ${feature.category === 'sentiment' ? 'border-yellow-500 text-yellow-400' : ''}
+                        ${feature.category === 'alternative' ? 'border-purple-500 text-purple-400' : ''}
+                      `}
+                    >
+                      {feature.category}
+                    </Badge>
+                  </div>
+                  <span className="text-blue-400 font-bold">
+                    {(feature.importance * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${feature.importance * 100}%` }}
+                  />
+                </div>
+                <p className="text-gray-400 text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Tabs */}
       <Tabs defaultValue="shap" className="w-full">
