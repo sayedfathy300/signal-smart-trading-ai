@@ -1,4 +1,3 @@
-
 import { DecisionExplanation } from "@/types/types";
 
 export interface BiasAnalysis {
@@ -34,6 +33,29 @@ export interface FeatureImportance {
   importance: number;
   direction: 'positive' | 'negative';
   description: string;
+}
+
+export interface DecisionExplanation {
+  decision: string;
+  confidence: number;
+  reasoning: string;
+  factors: Array<{
+    name: string;
+    value: number;
+    impact: number;
+    description: string;
+  }>;
+  model: {
+    name: string;
+    version: string;
+    accuracy: number;
+  };
+  alternatives: Array<{
+    decision: string;
+    probability: number;
+    reasoning: string;
+  }>;
+  timestamp: number;
 }
 
 class ExplainableAIService {

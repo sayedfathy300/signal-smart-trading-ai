@@ -16,6 +16,7 @@ import AIModels from '@/pages/AIModels';
 import ContinuousLearning from '@/pages/ContinuousLearning';
 import ExplainableAI from '@/pages/ExplainableAI';
 import SecurityDashboard from '@/pages/SecurityDashboard';
+import AttackPrevention from '@/pages/AttackPrevention';
 import NotFound from '@/pages/NotFound';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="continuous-learning" element={<ContinuousLearning />} />
             <Route path="explainable-ai" element={<ExplainableAI />} />
             <Route path="security" element={<SecurityDashboard />} />
+            <Route path="attack-prevention" element={<AttackPrevention />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
