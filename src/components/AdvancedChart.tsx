@@ -58,21 +58,16 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
       }
 
       const closes = historicalData.map(d => d.close);
-      const highs = historicalData.map(d => d.high);
-      const lows = historicalData.map(d => d.low);
 
-      // حساب المؤشرات الفنية
       const sma20 = technicalAnalysisService.calculateSMA(closes, 20);
       const sma50 = technicalAnalysisService.calculateSMA(closes, 50);
       const rsi = technicalAnalysisService.calculateRSI(closes);
       const macd = technicalAnalysisService.calculateMACD(closes);
       const bollinger = technicalAnalysisService.calculateBollingerBands(closes);
 
-      // دمج البيانات مع المؤشرات
       const enrichedData: ChartData[] = historicalData.map((candle, index) => {
         const dataPoint: ChartData = { ...candle };
         
-        // إضافة المؤشرات بناءً على الفهارس المتاحة
         if (index >= 19 && sma20[index - 19]) {
           dataPoint.sma20 = sma20[index - 19];
         }
@@ -96,7 +91,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
       setChartData(enrichedData);
 
-      // توليد إشارة التداول
       const signal = technicalAnalysisService.generateTradingSignal(symbol, historicalData, timeframe);
       setTradingSignal(signal);
 
@@ -151,7 +145,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* إشارة التداول */}
       {tradingSignal && (
         <Card className="bg-trading-card border-gray-800">
           <CardHeader className="pb-3">
@@ -208,7 +201,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
         </Card>
       )}
 
-      {/* أدوات التحكم في الرسم البياني */}
       <Card className="bg-trading-card border-gray-800">
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -217,7 +209,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
             </CardTitle>
             
             <div className="flex flex-wrap gap-2">
-              {/* اختيار نوع الرسم البياني */}
               <div className="flex gap-1 bg-gray-800 rounded p-1">
                 <Button
                   size="sm"
@@ -242,7 +233,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
                 </Button>
               </div>
               
-              {/* اختيار المؤشرات */}
               <div className="flex flex-wrap gap-1">
                 {indicators.map(indicator => (
                   <Button
@@ -365,6 +355,11 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
                     stroke="#9CA3AF"
                   />
                   <YAxis stroke="#9CA3AF" />
+                  <YAxis 
+                    yAxisId="volume"
+                    orientation="right"
+                    stroke="#9CA3AF"
+                  />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: '#1F2937',
@@ -374,7 +369,12 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
                     labelFormatter={(value) => formatTimestamp(Number(value))}
                   />
                   
-                  <Bar dataKey="volume" fill="#374151" opacity={0.3} />
+                  <Bar 
+                    dataKey="volume" 
+                    fill="#374151" 
+                    opacity={0.3}
+                    yAxisId="volume"
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="close" 
@@ -389,7 +389,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
         </CardContent>
       </Card>
 
-      {/* مؤشرات إضافية */}
       {(selectedIndicators.includes('rsi') || selectedIndicators.includes('macd')) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {selectedIndicators.includes('rsi') && (
@@ -420,23 +419,6 @@ export const AdvancedChart: React.FC<AdvancedChartProps> = ({
                         dataKey="rsi" 
                         stroke="#45B7D1" 
                         strokeWidth={2}
-                        dot={false}
-                      />
-                      {/* خطوط تشبع البيع والشراء */}
-                      <Line 
-                        type="monotone" 
-                        dataKey={() => 70} 
-                        stroke="#FF6B6B" 
-                        strokeWidth={1}
-                        strokeDasharray="3 3"
-                        dot={false}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey={() => 30} 
-                        stroke="#4ECDC4" 
-                        strokeWidth={1}
-                        strokeDasharray="3 3"
                         dot={false}
                       />
                     </LineChart>

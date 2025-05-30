@@ -52,7 +52,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
         const upperShadow = candle.high - Math.max(candle.open, candle.close);
         const lowerShadow = Math.min(candle.open, candle.close) - candle.low;
         
-        // تحديد الأنماط الفنية
         const pattern = detectCandlePattern(candle, historicalData, index);
         
         return {
@@ -66,8 +65,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
       });
 
       setCandleData(enhancedData);
-      
-      // توليد توقع ذكي
       generateAIPrediction(enhancedData);
       
     } catch (error) {
@@ -83,31 +80,27 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
     const upperShadow = candle.high - Math.max(candle.open, candle.close);
     const lowerShadow = Math.min(candle.open, candle.close) - candle.low;
 
-    // نمط المطرقة
     if (lowerShadow > bodySize * 2 && upperShadow < bodySize * 0.1) {
       return 'hammer';
     }
     
-    // نمط الدوجي
     if (bodySize < totalRange * 0.1) {
       return 'doji';
     }
     
-    // نمط الابتلاع الصاعد
     if (index > 0) {
       const prevCandle = allCandles[index - 1];
-      if (prevCandle.close < prevCandle.open && // الشمعة السابقة هابطة
-          candle.close > candle.open && // الشمعة الحالية صاعدة
-          candle.open < prevCandle.close && // فتح أقل من إغلاق السابقة
-          candle.close > prevCandle.open) { // إغلاق أعلى من فتح السابقة
+      if (prevCandle.close < prevCandle.open && 
+          candle.close > candle.open && 
+          candle.open < prevCandle.close && 
+          candle.close > prevCandle.open) {
         return 'bullish_engulfing';
       }
       
-      // نمط الابتلاع الهابط
-      if (prevCandle.close > prevCandle.open && // الشمعة السابقة صاعدة
-          candle.close < candle.open && // الشمعة الحالية هابطة
-          candle.open > prevCandle.close && // فتح أعلى من إغلاق السابقة
-          candle.close < prevCandle.open) { // إغلاق أقل من فتح السابقة
+      if (prevCandle.close > prevCandle.open && 
+          candle.close < candle.open && 
+          candle.open > prevCandle.close && 
+          candle.close < prevCandle.open) {
         return 'bearish_engulfing';
       }
     }
@@ -116,14 +109,13 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
   };
 
   const generateAIPrediction = async (data: EnhancedCandlestickData[]) => {
-    // محاكاة توقع ذكي متقدم
     const lastCandles = data.slice(-10);
     const bullishCandles = lastCandles.filter(c => c.bullish).length;
     const patterns = lastCandles.filter(c => c.pattern).length;
     
     const trend = bullishCandles > 5 ? 'bullish' : bullishCandles < 3 ? 'bearish' : 'neutral';
-    const strength = Math.abs(bullishCandles - 5) * 20; // 0-100
-    const confidence = (patterns * 0.1 + strength * 0.01); // 0-1
+    const strength = Math.abs(bullishCandles - 5) * 20;
+    const confidence = (patterns * 0.1 + strength * 0.01);
     
     setAiPrediction({
       trend,
@@ -146,7 +138,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
     const candleWidth = Math.max(width * 0.6, 2);
     const candleX = x + (width - candleWidth) / 2;
     
-    // حساب المواقع
     const maxPrice = Math.max(open, close, high, low);
     const minPrice = Math.min(open, close, high, low);
     const priceRange = maxPrice - minPrice || 1;
@@ -161,7 +152,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
     
     return (
       <g>
-        {/* خط الظل العلوي */}
         <line
           x1={candleX + candleWidth / 2}
           y1={highY}
@@ -171,7 +161,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
           strokeWidth={1}
         />
         
-        {/* خط الظل السفلي */}
         <line
           x1={candleX + candleWidth / 2}
           y1={bodyTop + bodyHeight}
@@ -181,7 +170,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
           strokeWidth={1}
         />
         
-        {/* جسم الشمعة */}
         <rect
           x={candleX}
           y={bodyTop}
@@ -193,7 +181,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
           rx={1}
         />
         
-        {/* إشارة النمط */}
         {pattern && (
           <circle
             cx={candleX + candleWidth / 2}
@@ -228,7 +215,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* توقع الذكاء الاصطناعي */}
       {aiPrediction && (
         <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30">
           <CardHeader className="pb-3">
@@ -272,7 +258,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
         </Card>
       )}
 
-      {/* أدوات التحكم في الأنماط */}
       <Card className="bg-trading-card border-gray-800">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-center">
@@ -318,6 +303,11 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
                   stroke="#9CA3AF"
                   domain={['dataMin - 10', 'dataMax + 10']}
                 />
+                <YAxis 
+                  yAxisId="volume"
+                  orientation="right"
+                  stroke="#9CA3AF"
+                />
                 <Tooltip 
                   contentStyle={{
                     backgroundColor: '#1F2937',
@@ -332,7 +322,6 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
                   }}
                 />
                 
-                {/* عرض الحجم كأعمدة */}
                 <Bar 
                   dataKey="volume" 
                   fill="#374151" 
@@ -340,16 +329,17 @@ export function CandlestickChart({ symbol, timeframe = '1day', className, lang =
                   yAxisId="volume"
                 />
                 
-                {/* الشموع اليابانية المخصصة */}
-                <Bar 
-                  dataKey="close"
-                  shape={<CustomCandlestick />}
+                <Line 
+                  type="monotone"
+                  dataKey="close" 
+                  stroke="#60A5FA"
+                  strokeWidth={2}
+                  dot={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
           
-          {/* إحصائيات الأنماط */}
           <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-4 text-center">
             {patterns.map(pattern => {
               const count = candleData.filter(c => c.pattern?.includes(pattern.id)).length;
