@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -14,7 +15,8 @@ import {
   Target,
   Users,
   Lock,
-  Box
+  Box,
+  Copy
 } from 'lucide-react';
 import {
   Sidebar,
@@ -111,6 +113,11 @@ export function AppSidebar({ lang }: AppSidebarProps) {
       title: lang === 'ar' ? 'التحليل التفاعلي' : 'Interactive Analysis',
       icon: Target,
       url: '/interactive-analysis'
+    },
+    {
+      title: lang === 'ar' ? 'التداول الاجتماعي' : 'Social Trading',
+      icon: Copy,
+      url: '/social-trading'
     }
   ];
 

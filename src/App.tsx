@@ -21,6 +21,7 @@ import AdvancedUI from '@/pages/AdvancedUI';
 import NotFound from '@/pages/NotFound';
 import { AppLayout } from '@/components/AppLayout';
 import InteractiveAnalysis from './pages/InteractiveAnalysis';
+import SocialTrading from './pages/SocialTrading';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useState } from 'react';
@@ -39,7 +40,7 @@ function App() {
               <AppSidebar lang={lang} />
               <div className="flex-1">
                 <Routes>
-                  <Route path="/" element={<AppLayout />}>
+                  <Route path="/" element={<AppLayout lang={lang} setLang={setLang} />}>
                     <Route index element={<Index />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="charts" element={<Charts />} />
@@ -57,6 +58,7 @@ function App() {
                     <Route path="attack-prevention" element={<AttackPrevention />} />
                     <Route path="advanced-ui" element={<AdvancedUI />} />
                     <Route path="interactive-analysis" element={<InteractiveAnalysis lang={lang} />} />
+                    <Route path="social-trading" element={<SocialTrading lang={lang} />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
