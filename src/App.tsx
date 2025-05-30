@@ -2,16 +2,17 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
-import { AppLayout } from '@/components/AppLayout';
-import Dashboard from '@/pages/Dashboard';
-import TradingBot from '@/pages/TradingBot';
-import AIModels from '@/pages/AIModels';
-import Charts from '@/pages/Charts';
-import Portfolio from '@/pages/Portfolio';
-import Analysis from '@/pages/Analysis';
-import AlternativeData from '@/pages/AlternativeData';
 import Index from '@/pages/Index';
+import Dashboard from '@/pages/Dashboard';
+import Charts from '@/pages/Charts';
+import Analysis from '@/pages/Analysis';
+import Portfolio from '@/pages/Portfolio';
+import TradingBot from '@/pages/TradingBot';
+import AlternativeData from '@/pages/AlternativeData';
+import AIModels from '@/pages/AIModels';
+import ContinuousLearning from '@/pages/ContinuousLearning';
 import NotFound from '@/pages/NotFound';
+import AppLayout from '@/components/AppLayout';
 
 const queryClient = new QueryClient();
 
@@ -19,21 +20,22 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/charts" element={<Charts />} />
-            <Route path="/analysis" element={<Analysis />} />
-            <Route path="/alternative-data" element={<AlternativeData />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/trading-bot" element={<TradingBot />} />
-            <Route path="/ai-models" element={<AIModels />} />
+        <Routes>
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<Index />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="charts" element={<Charts />} />
+            <Route path="analysis" element={<Analysis />} />
+            <Route path="portfolio" element={<Portfolio />} />
+            <Route path="trading-bot" element={<TradingBot />} />
+            <Route path="alternative-data" element={<AlternativeData />} />
+            <Route path="ai-models" element={<AIModels />} />
+            <Route path="continuous-learning" element={<ContinuousLearning />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-        <Toaster />
+          </Route>
+        </Routes>
       </Router>
+      <Toaster />
     </QueryClientProvider>
   );
 }
