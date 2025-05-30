@@ -142,9 +142,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
     setTrainingStatus('training');
     
     try {
-      // محاكاة التقدم
+      // محاكاة التقدم مع رسائل تحديث
       for (let i = 0; i <= 100; i += 10) {
         setProgress(i);
+        console.log(`🚀 تدريب النماذج: ${i}%`);
         await new Promise(resolve => setTimeout(resolve, 200));
       }
       
@@ -162,6 +163,7 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
       setCnnResult(results.cnn);
       
       setTrainingStatus('completed');
+      console.log('✅ تم إكمال التدريب بنجاح!');
     } catch (error) {
       console.error('Error running hybrid models:', error);
       setTrainingStatus('idle');
@@ -173,8 +175,9 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
   const runAutoMLOptimization = async () => {
     setLoading(true);
     try {
+      console.log('🤖 بدء تحسين AutoML...');
       const result = await continuousLearningService.runAutoML('market_data', 'price_direction');
-      console.log('AutoML completed:', result);
+      console.log('✅ AutoML مكتمل:', result);
       loadContinuousLearningMetrics();
     } catch (error) {
       console.error('Error running AutoML:', error);
@@ -187,7 +190,7 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
 
   return (
     <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* الرأس */}
+      {/* الرأس المحسن */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">
@@ -196,11 +199,19 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
           <p className="text-gray-400">
             {lang === 'ar' ? 'نماذج متطورة للتحليل والتنبؤ المالي باستخدام الذكاء الاصطناعي' : 'Advanced AI models for financial analysis and prediction'}
           </p>
+          {trainingStatus === 'completed' && (
+            <div className="flex items-center gap-2 mt-2">
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              <span className="text-green-400 text-sm">
+                {lang === 'ar' ? 'تم إكمال التدريب بنجاح' : 'Training completed successfully'}
+              </span>
+            </div>
+          )}
         </div>
         
         <div className="flex gap-2">
           <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 bg-trading-card border-gray-700">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -213,7 +224,7 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
           <Button
             onClick={runHybridModels}
             disabled={loading}
-            className="bg-trading-primary hover:bg-blue-600"
+            className="bg-trading-primary hover:bg-blue-600 transition-all duration-200"
           >
             {loading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {loading ? (lang === 'ar' ? 'جاري التشغيل...' : 'Running...') : (lang === 'ar' ? 'تشغيل النماذج' : 'Run Models')}
@@ -221,17 +232,21 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
         </div>
       </div>
 
-      {/* شريط التقدم */}
+      {/* شريط التقدم المحسن */}
       {trainingStatus === 'training' && (
-        <Card className="bg-trading-card border-blue-500/30">
+        <Card className="bg-trading-card border-blue-500/30 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-blue-400 font-medium">
+              <span className="text-blue-400 font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 animate-pulse" />
                 {lang === 'ar' ? 'تدريب النماذج المتقدمة...' : 'Training Advanced Models...'}
               </span>
-              <span className="text-white">{progress}%</span>
+              <span className="text-white font-bold">{progress}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-3" />
+            <div className="text-xs text-gray-400 mt-2">
+              {lang === 'ar' ? 'جاري معالجة البيانات وتحسين النماذج' : 'Processing data and optimizing models'}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -269,10 +284,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* LSTM Results */}
             {lstmResult && (
-              <Card className="bg-trading-card border-gray-800">
+              <Card className="bg-trading-card border-gray-800 hover:border-blue-500/50 transition-all duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    <TrendingUp className="h-5 w-5" />
+                    <TrendingUp className="h-5 w-5 text-blue-400" />
                     {lang === 'ar' ? 'تنبؤات LSTM المتقدمة' : 'Advanced LSTM Predictions'}
                   </CardTitle>
                 </CardHeader>
@@ -303,10 +318,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
 
             {/* CNN Results */}
             {cnnResult && (
-              <Card className="bg-trading-card border-gray-800">
+              <Card className="bg-trading-card border-gray-800 hover:border-purple-500/50 transition-all duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-5 w-5 text-purple-400" />
                     {lang === 'ar' ? 'تحليل الأنماط البصرية CNN' : 'CNN Visual Pattern Analysis'}
                   </CardTitle>
                 </CardHeader>
@@ -333,10 +348,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
 
           {/* Ensemble Results */}
           {ensembleResult && (
-            <Card className="bg-trading-card border-gray-800">
+            <Card className="bg-trading-card border-gray-800 hover:border-green-500/50 transition-all duration-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Network className="h-5 w-5" />
+                  <Network className="h-5 w-5 text-green-400" />
                   {lang === 'ar' ? 'نتائج النماذج المجمعة' : 'Ensemble Model Results'}
                 </CardTitle>
               </CardHeader>
@@ -357,21 +372,218 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
           )}
         </TabsContent>
 
+        {/* محولات اللغة */}
+        <TabsContent value="transformers" className="space-y-6">
+          {transformerResult && (
+            <Card className="bg-trading-card border-gray-800 hover:border-yellow-500/50 transition-all duration-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <MessageSquare className="h-5 w-5 text-yellow-400" />
+                  {lang === 'ar' ? 'تحليل محولات اللغة' : 'Transformer Analysis'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'التوقع:' : 'Prediction:'}</h4>
+                    <p className="text-white font-semibold">{transformerResult.prediction}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'مستوى الثقة:' : 'Confidence:'}</h4>
+                    <div className="flex items-center gap-2">
+                      <Progress value={transformerResult.confidence * 100} className="flex-1" />
+                      <span className="text-white">{(transformerResult.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'الكلمات المفتاحية:' : 'Key Tokens:'}</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {transformerResult.attention_scores.slice(0, 5).map((token, index) => (
+                        <Badge key={index} variant="outline">
+                          {token.token} ({(token.score * 100).toFixed(1)}%)
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* التعلم المعزز */}
+        <TabsContent value="reinforcement" className="space-y-6">
+          {rlResult && (
+            <Card className="bg-trading-card border-gray-800 hover:border-red-500/50 transition-all duration-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Target className="h-5 w-5 text-red-400" />
+                  {lang === 'ar' ? 'نتائج التعلم المعزز' : 'Reinforcement Learning Results'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-gray-400 text-sm">{lang === 'ar' ? 'الإجراء الموصى به:' : 'Recommended Action:'}</span>
+                      <div className="text-white font-bold">{rlResult.recommended_action}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-sm">{lang === 'ar' ? 'مكافأة متوقعة:' : 'Expected Reward:'}</span>
+                      <div className="text-white font-bold">{rlResult.expected_reward.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'قيم الإجراءات:' : 'Action Values:'}</h4>
+                    <div className="space-y-2">
+                      {Object.entries(rlResult.action_values).map(([action, value]) => (
+                        <div key={action} className="flex justify-between items-center">
+                          <span className="text-gray-400">{action}</span>
+                          <span className="text-white">{(value as number).toFixed(3)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* الشبكات البيانية */}
+        <TabsContent value="graph-neural" className="space-y-6">
+          {graphResult && (
+            <Card className="bg-trading-card border-gray-800 hover:border-cyan-500/50 transition-all duration-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Network className="h-5 w-5 text-cyan-400" />
+                  {lang === 'ar' ? 'تحليل الشبكات البيانية' : 'Graph Neural Network Analysis'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'العقد المؤثرة:' : 'Influential Nodes:'}</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      {graphResult.node_importance.slice(0, 4).map((node, index) => (
+                        <div key={index} className="p-2 bg-gray-800/50 rounded">
+                          <div className="font-medium text-white">{node.node}</div>
+                          <div className="text-sm text-gray-400">تأثير: {(node.importance * 100).toFixed(1)}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'التوقع:' : 'Prediction:'}</h4>
+                    <Badge variant="default" className="text-lg px-4 py-2">
+                      {graphResult.prediction}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* التعلم المستمر */}
+        <TabsContent value="continuous" className="space-y-6">
+          {learningMetrics && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="bg-trading-card border-gray-800 hover:border-blue-500/50 transition-all duration-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Activity className="h-5 w-5 text-blue-400" />
+                    {lang === 'ar' ? 'معدل التعلم' : 'Learning Rate'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white">{learningMetrics.learning_rate.toFixed(4)}</div>
+                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'التحديث الحالي' : 'Current Update'}</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-trading-card border-gray-800 hover:border-green-500/50 transition-all duration-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                    {lang === 'ar' ? 'دقة النموذج' : 'Model Accuracy'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white">{(learningMetrics.model_accuracy * 100).toFixed(1)}%</div>
+                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'الأداء الحالي' : 'Current Performance'}</div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-trading-card border-gray-800 hover:border-yellow-500/50 transition-all duration-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                    {lang === 'ar' ? 'وقت التدريب' : 'Training Time'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white">{learningMetrics.training_time.toFixed(1)}s</div>
+                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'الدورة الأخيرة' : 'Last Cycle'}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* AutoML */}
+        <TabsContent value="automl" className="space-y-6">
+          <Card className="bg-trading-card border-gray-800 hover:border-purple-500/50 transition-all duration-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Settings className="h-5 w-5 text-purple-400" />
+                {lang === 'ar' ? 'تحسين AutoML' : 'AutoML Optimization'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-gray-400">
+                  {lang === 'ar' ? 'يقوم AutoML بتحسين النماذج تلقائياً لتحقيق أفضل أداء ممكن.' : 'AutoML automatically optimizes models for best possible performance.'}
+                </p>
+                
+                <Button
+                  onClick={runAutoMLOptimization}
+                  disabled={loading}
+                  className="w-full bg-trading-primary hover:bg-blue-600 transition-all duration-200"
+                >
+                  {loading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                  {loading ? (lang === 'ar' ? 'جاري التحسين...' : 'Optimizing...') : (lang === 'ar' ? 'تشغيل AutoML' : 'Run AutoML')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* الذكاء التوليدي */}
         <TabsContent value="generative" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* السيناريوهات المولدة */}
-            <Card className="bg-trading-card border-gray-800">
+            <Card className="bg-trading-card border-gray-800 hover:border-pink-500/50 transition-all duration-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Sparkles className="h-5 w-5" />
+                  <Sparkles className="h-5 w-5 text-pink-400" />
                   {lang === 'ar' ? 'السيناريوهات المولدة' : 'Generated Scenarios'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {generatedScenarios.map((scenario, index) => (
-                    <div key={scenario.id} className="p-4 border border-gray-700 rounded-lg">
+                    <div key={scenario.id} className="p-4 border border-gray-700 rounded-lg hover:border-pink-500/50 transition-all duration-200">
                       <div className="flex justify-between items-center mb-2">
                         <Badge variant={scenario.type === 'bullish' ? 'default' : scenario.type === 'bearish' ? 'destructive' : 'secondary'}>
                           {scenario.type === 'bullish' ? 'صاعد' : scenario.type === 'bearish' ? 'هابط' : 'محايد'}
@@ -390,10 +602,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
 
             {/* الاستراتيجية المولدة */}
             {generatedStrategy && (
-              <Card className="bg-trading-card border-gray-800">
+              <Card className="bg-trading-card border-gray-800 hover:border-orange-500/50 transition-all duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    <Target className="h-5 w-5" />
+                    <Target className="h-5 w-5 text-orange-400" />
                     {lang === 'ar' ? 'الاستراتيجية المولدة' : 'Generated Strategy'}
                   </CardTitle>
                 </CardHeader>
@@ -426,10 +638,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
         {/* الذكاء القابل للتفسير */}
         <TabsContent value="explainable" className="space-y-6">
           {decisionExplanation && (
-            <Card className="bg-trading-card border-gray-800">
+            <Card className="bg-trading-card border-gray-800 hover:border-indigo-500/50 transition-all duration-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <Brain className="h-5 w-5" />
+                  <Brain className="h-5 w-5 text-indigo-400" />
                   {lang === 'ar' ? 'تفسير القرار' : 'Decision Explanation'}
                 </CardTitle>
               </CardHeader>
@@ -471,10 +683,10 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
           
           {/* تحليل التحيز */}
           {biasAnalysis && (
-            <Card className="bg-trading-card border-gray-800">
+            <Card className="bg-trading-card border-gray-800 hover:border-amber-500/50 transition-all duration-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <AlertTriangle className="h-5 w-5" />
+                  <AlertTriangle className="h-5 w-5 text-amber-400" />
                   {lang === 'ar' ? 'تحليل التحيز' : 'Bias Analysis'}
                 </CardTitle>
               </CardHeader>
@@ -489,7 +701,7 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
                     <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'عوامل التحيز:' : 'Bias Factors:'}</h4>
                     <div className="space-y-2">
                       {biasAnalysis.biasFactors.map((factor, index) => (
-                        <div key={index} className="p-2 bg-gray-800/50 rounded">
+                        <div key={index} className="p-2 bg-gray-800/50 rounded hover:bg-gray-700/50 transition-all duration-200">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-white text-sm">{factor.factor}</span>
                             <Badge variant={factor.severity === 'high' ? 'destructive' : factor.severity === 'medium' ? 'secondary' : 'default'}>
@@ -500,203 +712,6 @@ const AdvancedAIModels = ({ symbol = 'AAPL', lang = 'ar' }: AdvancedAIModelsProp
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* التعلم المستمر */}
-        <TabsContent value="continuous" className="space-y-6">
-          {learningMetrics && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Activity className="h-5 w-5" />
-                    {lang === 'ar' ? 'معدل التعلم' : 'Learning Rate'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">{learningMetrics.learning_rate.toFixed(4)}</div>
-                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'التحديث الحالي' : 'Current Update'}</div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <CheckCircle className="h-5 w-5" />
-                    {lang === 'ar' ? 'دقة النموذج' : 'Model Accuracy'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">{(learningMetrics.model_accuracy * 100).toFixed(1)}%</div>
-                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'الأداء الحالي' : 'Current Performance'}</div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Clock className="h-5 w-5" />
-                    {lang === 'ar' ? 'وقت التدريب' : 'Training Time'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-white">{learningMetrics.training_time.toFixed(1)}s</div>
-                    <div className="text-sm text-gray-400">{lang === 'ar' ? 'الدورة الأخيرة' : 'Last Cycle'}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* AutoML */}
-        <TabsContent value="automl" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Settings className="h-5 w-5" />
-                {lang === 'ar' ? 'تحسين AutoML' : 'AutoML Optimization'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-400">
-                  {lang === 'ar' ? 'يقوم AutoML بتحسين النماذج تلقائياً لتحقيق أفضل أداء ممكن.' : 'AutoML automatically optimizes models for best possible performance.'}
-                </p>
-                
-                <Button
-                  onClick={runAutoMLOptimization}
-                  disabled={loading}
-                  className="w-full bg-trading-primary hover:bg-blue-600"
-                >
-                  {loading ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                  {loading ? (lang === 'ar' ? 'جاري التحسين...' : 'Optimizing...') : (lang === 'ar' ? 'تشغيل AutoML' : 'Run AutoML')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* محولات اللغة */}
-        <TabsContent value="transformers" className="space-y-6">
-          {transformerResult && (
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <MessageSquare className="h-5 w-5" />
-                  {lang === 'ar' ? 'تحليل محولات اللغة' : 'Transformer Analysis'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'التوقع:' : 'Prediction:'}</h4>
-                    <p className="text-white">{transformerResult.prediction}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'مستوى الثقة:' : 'Confidence:'}</h4>
-                    <div className="flex items-center gap-2">
-                      <Progress value={transformerResult.confidence * 100} className="flex-1" />
-                      <span className="text-white">{(transformerResult.confidence * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'الكلمات المفتاحية:' : 'Key Tokens:'}</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {transformerResult.attention_scores.slice(0, 5).map((token, index) => (
-                        <Badge key={index} variant="outline">
-                          {token.token} ({(token.score * 100).toFixed(1)}%)
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* التعلم المعزز */}
-        <TabsContent value="reinforcement" className="space-y-6">
-          {rlResult && (
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Target className="h-5 w-5" />
-                  {lang === 'ar' ? 'نتائج التعلم المعزز' : 'Reinforcement Learning Results'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-gray-400 text-sm">{lang === 'ar' ? 'الإجراء الموصى به:' : 'Recommended Action:'}</span>
-                      <div className="text-white font-bold">{rlResult.recommended_action}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-400 text-sm">{lang === 'ar' ? 'مكافأة متوقعة:' : 'Expected Reward:'}</span>
-                      <div className="text-white font-bold">{rlResult.expected_reward.toFixed(2)}</div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'قيم الإجراءات:' : 'Action Values:'}</h4>
-                    <div className="space-y-2">
-                      {Object.entries(rlResult.action_values).map(([action, value]) => (
-                        <div key={action} className="flex justify-between items-center">
-                          <span className="text-gray-400">{action}</span>
-                          <span className="text-white">{value.toFixed(3)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* الشبكات البيانية */}
-        <TabsContent value="graph-neural" className="space-y-6">
-          {graphResult && (
-            <Card className="bg-trading-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Network className="h-5 w-5" />
-                  {lang === 'ar' ? 'تحليل الشبكات البيانية' : 'Graph Neural Network Analysis'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'العقد المؤثرة:' : 'Influential Nodes:'}</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      {graphResult.node_importance.slice(0, 4).map((node, index) => (
-                        <div key={index} className="p-2 bg-gray-800/50 rounded">
-                          <div className="font-medium text-white">{node.node}</div>
-                          <div className="text-sm text-gray-400">تأثير: {(node.importance * 100).toFixed(1)}%</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-gray-300 text-sm mb-2">{lang === 'ar' ? 'التوقع:' : 'Prediction:'}</h4>
-                    <Badge variant="default" className="text-lg px-4 py-2">
-                      {graphResult.prediction}
-                    </Badge>
                   </div>
                 </div>
               </CardContent>

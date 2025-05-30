@@ -76,6 +76,9 @@ export interface ContinuousLearningMetrics {
     memory: number;
     gpu: number;
   };
+  learning_rate: number;
+  model_accuracy: number;
+  training_time: number;
 }
 
 class ContinuousLearningService {
@@ -107,7 +110,10 @@ class ContinuousLearningService {
         cpu: 68,
         memory: 72,
         gpu: 45
-      }
+      },
+      learning_rate: 0.001,
+      model_accuracy: 0.892,
+      training_time: 145.7
     };
   }
 
