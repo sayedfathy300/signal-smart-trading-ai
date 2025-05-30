@@ -1,88 +1,33 @@
 
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AppLayout } from "@/components/AppLayout";
-import Dashboard from "@/pages/Dashboard";
-import AIModels from "@/pages/AIModels";
-import TradingBot from "@/pages/TradingBot";
-import NotFound from "@/pages/NotFound";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { AppLayout } from '@/components/AppLayout';
+import { Dashboard } from '@/pages/Dashboard';
+import { TradingBot } from '@/pages/TradingBot';
+import { AIModels } from '@/pages/AIModels';
+import { Index } from '@/pages/Index';
+import { NotFound } from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
 
-const App: React.FC = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <Router>
+        <AppLayout>
           <Routes>
-            <Route path="/" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/charts" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/analysis" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/trading" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/portfolio" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/ai-models" element={
-              <AppLayout>
-                <AIModels />
-              </AppLayout>
-            } />
-            <Route path="/neural-networks" element={
-              <AppLayout>
-                <AIModels />
-              </AppLayout>
-            } />
-            <Route path="/trading-bot" element={
-              <AppLayout>
-                <TradingBot />
-              </AppLayout>
-            } />
-            <Route path="/market-prediction" element={
-              <AppLayout>
-                <AIModels />
-              </AppLayout>
-            } />
-            <Route path="/settings" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            <Route path="/help" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/" element={<Index />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/trading-bot" element={<TradingBot />} />
+            <Route path="/ai-models" element={<AIModels />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+        </AppLayout>
+        <Toaster />
+      </Router>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

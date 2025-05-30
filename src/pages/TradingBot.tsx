@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Bot, Play, Square, Settings, TrendingUp, AlertTriangle, DollarSign, Activity } from 'lucide-react';
+import { Bot, Play, Square, Settings, TrendingUp, AlertTriangle, DollarSign, Activity, Brain, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { aiTradingService, AISignal } from '@/services/aiTradingService';
 
 export interface TradingBotProps {
   lang?: 'en' | 'ar';
@@ -14,6 +15,8 @@ export interface TradingBotProps {
 const TradingBot = ({ lang = 'en' }: TradingBotProps) => {
   const [botStatus, setBotStatus] = useState<'running' | 'stopped' | 'paused'>('stopped');
   const [autoMode, setAutoMode] = useState(false);
+  const [aiSignals, setAiSignals] = useState<AISignal[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const botStats = {
     totalTrades: 1247,
@@ -36,6 +39,25 @@ const TradingBot = ({ lang = 'en' }: TradingBotProps) => {
     { name: 'Mean Reversion', enabled: false, profit: '+3.1%' },
     { name: 'Arbitrage Hunter', enabled: true, profit: '+12.9%' },
   ];
+
+  useEffect(() => {
+    loadAISignals();
+    const interval = setInterval(loadAISignals, 30000); // تحديث كل 30 ثانية
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadAISignals = async () => {
+    setLoading(true);
+    try {
+      const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSD'];
+      const signals = await aiTradingService.getMultipleSignals(symbols, '15min');
+      setAiSignals(signals);
+    } catch (error) {
+      console.error('Error loading AI signals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBotControl = (action: 'start' | 'stop' | 'pause') => {
     setBotStatus(action === 'start' ? 'running' : action === 'stop' ? 'stopped' : 'paused');
@@ -191,6 +213,106 @@ const TradingBot = ({ lang = 'en' }: TradingBotProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Signals */}
+      <Card className="bg-trading-card border-gray-800">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-white flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-500" />
+            {lang === 'en' ? 'AI Trading Signals' : 'إشارات الذكاء الاصطناعي'}
+          </CardTitle>
+          <Button
+            onClick={loadAISignals}
+            disabled={loading}
+            size="sm"
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            {loading ? (lang === 'en' ? 'Loading...' : 'جاري التحميل...') : (lang === 'en' ? 'Refresh' : 'تحديث')}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {aiSignals.map((signal, index) => (
+              <div key={index} className="p-4 bg-trading-secondary rounded-lg border border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">{signal.symbol}</span>
+                    <Badge 
+                      variant={signal.action === 'BUY' ? 'default' : signal.action === 'SELL' ? 'destructive' : 'secondary'}
+                      className={
+                        signal.action === 'BUY' ? 'bg-trading-up' : 
+                        signal.action === 'SELL' ? 'bg-trading-down' : 
+                        'bg-gray-600'
+                      }
+                    >
+                      {signal.action}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-white">{signal.strength}%</div>
+                    <div className="text-xs text-gray-400">
+                      {lang === 'en' ? 'Strength' : 'القوة'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">{lang === 'en' ? 'Entry:' : 'الدخول:'}</span>
+                    <span className="text-white">{signal.entry_price.toFixed(5)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">{lang === 'en' ? 'Take Profit:' : 'جني الأرباح:'}</span>
+                    <span className="text-trading-up">{signal.take_profit.toFixed(5)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">{lang === 'en' ? 'Stop Loss:' : 'وقف الخسارة:'}</span>
+                    <span className="text-trading-down">{signal.stop_loss.toFixed(5)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">{lang === 'en' ? 'R/R Ratio:' : 'نسبة المخاطرة:'}</span>
+                    <span className="text-white">{signal.risk_reward_ratio.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-gray-600">
+                  <div className="text-xs text-gray-400 mb-2">
+                    {lang === 'en' ? 'Analysis:' : 'التحليل:'}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{lang === 'en' ? 'Trend:' : 'الاتجاه:'}</span>
+                      <span className={cn(
+                        signal.analysis.technical.trend === 'bullish' ? 'text-trading-up' :
+                        signal.analysis.technical.trend === 'bearish' ? 'text-trading-down' :
+                        'text-gray-400'
+                      )}>
+                        {signal.analysis.technical.trend}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">{lang === 'en' ? 'Confidence:' : 'الثقة:'}</span>
+                      <span className="text-white">{(signal.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  
+                  {signal.reasoning.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-xs text-gray-400 mb-1">
+                        {lang === 'en' ? 'Key Reasons:' : 'الأسباب الرئيسية:'}
+                      </div>
+                      <div className="text-xs text-gray-300">
+                        {signal.reasoning[0]}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Active Trades and Strategies */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
