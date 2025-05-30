@@ -6,6 +6,9 @@ import { AppLayout } from '@/components/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import TradingBot from '@/pages/TradingBot';
 import AIModels from '@/pages/AIModels';
+import Charts from '@/pages/Charts';
+import Portfolio from '@/pages/Portfolio';
+import Analysis from '@/pages/Analysis';
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 
@@ -19,6 +22,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/charts" element={<Charts />} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/trading-bot" element={<TradingBot />} />
             <Route path="/ai-models" element={<AIModels />} />
             <Route path="*" element={<NotFound />} />
