@@ -17,6 +17,7 @@ import ContinuousLearning from '@/pages/ContinuousLearning';
 import ExplainableAI from '@/pages/ExplainableAI';
 import SecurityDashboard from '@/pages/SecurityDashboard';
 import AttackPrevention from '@/pages/AttackPrevention';
+import AdvancedUI from '@/pages/AdvancedUI';
 import NotFound from '@/pages/NotFound';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -43,6 +44,7 @@ function App() {
             <Route path="explainable-ai" element={<ExplainableAI />} />
             <Route path="security" element={<SecurityDashboard />} />
             <Route path="attack-prevention" element={<AttackPrevention />} />
+            <Route path="advanced-ui" element={<AdvancedUI />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

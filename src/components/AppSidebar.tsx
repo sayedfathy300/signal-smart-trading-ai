@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -14,7 +13,8 @@ import {
   Settings,
   Target,
   Users,
-  Lock
+  Lock,
+  Cube
 } from 'lucide-react';
 import {
   Sidebar,
@@ -101,6 +101,11 @@ export function AppSidebar({ lang }: AppSidebarProps) {
       title: lang === 'ar' ? 'الأمان' : 'Security',
       icon: Lock,
       url: '/security'
+    },
+    {
+      title: lang === 'ar' ? 'الواجهة المتقدمة' : 'Advanced UI',
+      icon: Cube,
+      url: '/advanced-ui'
     }
   ];
 

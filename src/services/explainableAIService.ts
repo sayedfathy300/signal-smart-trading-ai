@@ -1,4 +1,3 @@
-import { DecisionExplanation } from "@/types/types";
 
 export interface BiasAnalysis {
   overallBias: number;
