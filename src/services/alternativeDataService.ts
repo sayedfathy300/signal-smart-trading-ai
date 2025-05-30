@@ -511,6 +511,8 @@ class AlternativeDataService {
     blockchain: Map<string, BlockchainMetrics>,
     futures: Map<string, FuturesData>
   ) {
+    const directions: ('up' | 'down' | 'sideways')[] = ['up', 'down', 'sideways'];
+    
     return [
       {
         model_name: 'Multi-Source Economic Activity Predictor',
@@ -520,13 +522,13 @@ class AlternativeDataService {
           {
             symbol: 'SPY',
             timeframe: '1 month',
-            predicted_direction: Math.random() > 0.5 ? 'up' : 'down' as const,
+            predicted_direction: directions[Math.floor(Math.random() * directions.length)],
             confidence: Math.random() * 0.3 + 0.7
           },
           {
             symbol: 'QQQ',
             timeframe: '2 weeks',
-            predicted_direction: Math.random() > 0.5 ? 'up' : 'down' as const,
+            predicted_direction: directions[Math.floor(Math.random() * directions.length)],
             confidence: Math.random() * 0.3 + 0.7
           }
         ]
