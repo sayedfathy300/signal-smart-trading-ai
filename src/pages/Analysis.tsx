@@ -13,6 +13,7 @@ import {
   Building2
 } from 'lucide-react';
 import { FundamentalAnalysis } from '@/components/FundamentalAnalysis';
+import { SentimentAnalysis } from '@/components/SentimentAnalysis';
 
 interface AnalysisProps {
   lang?: 'en' | 'ar';
@@ -57,11 +58,11 @@ const Analysis = ({ lang = 'ar' }: AnalysisProps) => {
           <TabsTrigger value="fundamental">
             {lang === 'ar' ? 'التحليل الأساسي' : 'Fundamental'}
           </TabsTrigger>
-          <TabsTrigger value="technical">
-            {lang === 'ar' ? 'التحليل الفني' : 'Technical'}
-          </TabsTrigger>
           <TabsTrigger value="sentiment">
             {lang === 'ar' ? 'تحليل المشاعر' : 'Sentiment'}
+          </TabsTrigger>
+          <TabsTrigger value="technical">
+            {lang === 'ar' ? 'التحليل الفني' : 'Technical'}
           </TabsTrigger>
           <TabsTrigger value="economic">
             {lang === 'ar' ? 'التحليل الاقتصادي' : 'Economic'}
@@ -70,6 +71,13 @@ const Analysis = ({ lang = 'ar' }: AnalysisProps) => {
 
         <TabsContent value="fundamental" className="space-y-6">
           <FundamentalAnalysis 
+            symbol={selectedSymbol}
+            lang={lang}
+          />
+        </TabsContent>
+
+        <TabsContent value="sentiment" className="space-y-6">
+          <SentimentAnalysis 
             symbol={selectedSymbol}
             lang={lang}
           />
@@ -95,32 +103,6 @@ const Analysis = ({ lang = 'ar' }: AnalysisProps) => {
                 <Button className="bg-trading-primary hover:bg-blue-600">
                   <Zap className="h-4 w-4 mr-2" />
                   {lang === 'ar' ? 'بدء التحليل الفني' : 'Start Technical Analysis'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sentiment" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                {lang === 'ar' ? 'تحليل المشاعر بالذكاء الاصطناعي' : 'AI Sentiment Analysis'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Brain className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {lang === 'ar' ? 'تحليل مشاعر السوق' : 'Market Sentiment Analysis'}
-                </h3>
-                <p className="text-gray-400 mb-4">
-                  {lang === 'ar' ? 'تحليل مشاعر المستثمرين من وسائل التواصل والأخبار' : 'Analyze investor sentiment from social media and news'}
-                </p>
-                <Button className="bg-purple-600 hover:bg-purple-700">
-                  <Brain className="h-4 w-4 mr-2" />
-                  {lang === 'ar' ? 'بدء تحليل المشاعر' : 'Start Sentiment Analysis'}
                 </Button>
               </div>
             </CardContent>
