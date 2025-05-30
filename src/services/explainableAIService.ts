@@ -1,3 +1,4 @@
+
 import { DecisionExplanation } from "@/types/types";
 
 export interface BiasAnalysis {
@@ -111,5 +112,4 @@ class ExplainableAIService {
   }
 }
 
-export { type DecisionExplanation, type BiasAnalysis, type CounterfactualAnalysis, type FeatureImportance };
 export const explainableAIService = new ExplainableAIService();
