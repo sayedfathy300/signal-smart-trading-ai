@@ -9,11 +9,13 @@ import Analysis from '@/pages/Analysis';
 import Portfolio from '@/pages/Portfolio';
 import TradingBot from '@/pages/TradingBot';
 import TradingPlatform from '@/pages/TradingPlatform';
+import HighFrequencyTrading from '@/pages/HighFrequencyTrading';
 import RiskManagement from '@/pages/RiskManagement';
 import AlternativeData from '@/pages/AlternativeData';
 import AIModels from '@/pages/AIModels';
 import ContinuousLearning from '@/pages/ContinuousLearning';
 import ExplainableAI from '@/pages/ExplainableAI';
+import SecurityDashboard from '@/pages/SecurityDashboard';
 import NotFound from '@/pages/NotFound';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -38,6 +40,7 @@ function App() {
             <Route path="ai-models" element={<AIModels />} />
             <Route path="continuous-learning" element={<ContinuousLearning />} />
             <Route path="explainable-ai" element={<ExplainableAI />} />
+            <Route path="security" element={<SecurityDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

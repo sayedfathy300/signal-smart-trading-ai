@@ -1,43 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Zap, 
-  TrendingUp, 
-  DollarSign, 
-  Activity,
-  Settings,
-  Play,
-  Square,
-  RefreshCw,
-  AlertTriangle,
-  BarChart3,
-  PieChart,
-  Wallet,
-  Bot,
-  Globe,
-  ShieldCheck,
-  Lightbulb,
-  Scale,
-  Shuffle
-} from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { Brain, TrendingUp, AlertTriangle, BarChart3, Info, Target, Scale, Zap } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { 
   explainableAIService, 
-  DecisionExplanation, 
-  FeatureImportance,
-  BiasAnalysis,
-  CounterfactualAnalysis
+  type DecisionExplanation, 
+  type BiasAnalysis, 
+  type CounterfactualAnalysis, 
+  type FeatureImportance 
 } from '@/services/explainableAIService';
 
 interface ExplainableAIProps {
-  lang?: 'en' | 'ar';
+  lang: 'en' | 'ar';
 }
 
-const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
+const ExplainableAI = ({ lang }: ExplainableAIProps) => {
   const [decision, setDecision] = useState<DecisionExplanation | null>(null);
   const [featureImportance, setFeatureImportance] = useState<FeatureImportance[]>([]);
   const [biasAnalysis, setBiasAnalysis] = useState<BiasAnalysis | null>(null);
@@ -76,10 +58,16 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
     }
   };
 
-  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const factorData = decision?.factors?.map(factor => ({
+    name: factor.name,
+    impact: Math.abs(factor.impact * 100),
+    direction: factor.impact > 0 ? 'positive' : 'negative'
+  })) || [];
+
+  const biasColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
 
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
+    <div className={`min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-6 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
       {/* الرأس */}
       <div className="flex items-center justify-between">
         <div>
@@ -434,6 +422,100 @@ const ExplainableAI = ({ lang = 'ar' }: ExplainableAIProps) => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Fixed PieChart sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/10 backdrop-blur-md border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              {lang === 'ar' ? 'توزيع التحيز' : 'Bias Distribution'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={biasAnalysis?.biasFactors?.map((factor, index) => ({
+                    name: factor.factor,
+                    value: factor.bias * 100
+                  })) || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {biasAnalysis?.biasFactors?.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={biasColors[index % biasColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/10 backdrop-blur-md border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Scale className="h-5 w-5" />
+              {lang === 'ar' ? 'مقاييس العدالة' : 'Fairness Metrics'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Demographic Parity', value: (biasAnalysis?.fairnessMetrics?.demographicParity || 0) * 100 },
+                    { name: 'Equalized Odds', value: (biasAnalysis?.fairnessMetrics?.equalizedOdds || 0) * 100 },
+                    { name: 'Calibration', value: (biasAnalysis?.fairnessMetrics?.calibration || 0) * 100 }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {[0, 1, 2].map((index) => (
+                    <Cell key={`cell-${index}`} fill={biasColors[index]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Fixed Feature Importance section */}
+      <Card className="bg-white/10 backdrop-blur-md border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {lang === 'ar' ? 'أهمية الميزات' : 'Feature Importance'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {featureImportance.map((feature, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">{feature.name}</span>
+                  <Badge variant={feature.direction === 'positive' ? 'default' : 'destructive'}>
+                    {(feature.importance * 100).toFixed(1)}%
+                  </Badge>
+                </div>
+                <Progress value={feature.importance * 100} className="h-2" />
+                <p className="text-gray-300 text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

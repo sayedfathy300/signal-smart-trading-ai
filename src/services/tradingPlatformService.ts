@@ -1,4 +1,4 @@
-import ccxt from 'ccxt';
+import * as ccxt from 'ccxt';
 
 export interface TradingAccount {
   exchange: string;
@@ -455,7 +455,7 @@ class TradingPlatformService {
     const positions: Position[] = [];
     
     for (const [currency, info] of Object.entries(balance.total || {})) {
-      const amount = info as number;
+      const amount = typeof info === 'number' ? info : 0;
       if (amount > 0 && currency !== 'USDT' && currency !== 'USD') {
         try {
           const currentPrice = await this.convertToUSD(currency, 1, exchangeName);

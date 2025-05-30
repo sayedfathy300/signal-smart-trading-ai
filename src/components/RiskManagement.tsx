@@ -1,796 +1,504 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Shield, 
-  TrendingUp, 
-  AlertTriangle,
-  Target,
-  BarChart3,
-  PieChart,
-  Activity,
-  Settings,
-  Zap,
-  Calculator,
-  Scale,
-  TrendingDown
-} from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell, AreaChart, Area } from 'recharts';
-import { cn } from '@/lib/utils';
-import { 
-  riskManagementService,
-  KellyCriterionResult,
-  PortfolioOptimizationResult,
-  RiskParityStrategy,
-  DrawdownManagement,
-  RiskManagementMetrics
-} from '@/services/riskManagementService';
-import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, TrendingDown, AlertTriangle, Target, BarChart3, DollarSign, Percent, Calculator } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { riskManagementService } from '@/services/riskManagementService';
 
 interface RiskManagementProps {
-  lang?: 'en' | 'ar';
+  lang: 'en' | 'ar';
 }
 
-const RiskManagement = ({ lang = 'ar' }: RiskManagementProps) => {
-  const [kellyResults, setKellyResults] = useState<Record<string, KellyCriterionResult>>({});
-  const [portfolioOptimization, setPortfolioOptimization] = useState<PortfolioOptimizationResult | null>(null);
-  const [riskParityStrategies, setRiskParityStrategies] = useState<RiskParityStrategy[]>([]);
-  const [drawdownAnalysis, setDrawdownAnalysis] = useState<DrawdownManagement | null>(null);
-  const [riskMetrics, setRiskMetrics] = useState<RiskManagementMetrics | null>(null);
-  const [loading, setLoading] = useState(false);
+interface RiskProfile {
+  name: string;
+  description: string;
+  riskTolerance: 'low' | 'medium' | 'high';
+  capitalAllocation: number;
+  stopLoss: number;
+  takeProfit: number;
+  leverage: number;
+}
 
-  const assets = ['BTC/USDT', 'ETH/USDT', 'ADA/USDT', 'DOT/USDT', 'LINK/USDT'];
+const RiskManagement = ({ lang }: RiskManagementProps) => {
+  const [riskProfiles, setRiskProfiles] = useState<RiskProfile[]>([
+    {
+      name: 'محافظ',
+      description: 'استراتيجية منخفضة المخاطر مع التركيز على الحفاظ على رأس المال.',
+      riskTolerance: 'low',
+      capitalAllocation: 0.1,
+      stopLoss: 0.02,
+      takeProfit: 0.05,
+      leverage: 1
+    },
+    {
+      name: 'متوازن',
+      description: 'استراتيجية متوسطة المخاطر تهدف إلى تحقيق نمو معتدل.',
+      riskTolerance: 'medium',
+      capitalAllocation: 0.25,
+      stopLoss: 0.05,
+      takeProfit: 0.10,
+      leverage: 2
+    },
+    {
+      name: 'مغامر',
+      description: 'استراتيجية عالية المخاطر تسعى إلى تحقيق أقصى قدر من العائدات.',
+      riskTolerance: 'high',
+      capitalAllocation: 0.5,
+      stopLoss: 0.10,
+      takeProfit: 0.20,
+      leverage: 3
+    }
+  ]);
+  const [selectedProfile, setSelectedProfile] = useState<RiskProfile>(riskProfiles[0]);
+  const [capital, setCapital] = useState(10000);
+  const [riskPercentage, setRiskPercentage] = useState(2);
+  const [positionSize, setPositionSize] = useState(0);
+  const [stopLossPips, setStopLossPips] = useState(50);
+  const [leverage, setLeverage] = useState(1);
+  const [maxDrawdown, setMaxDrawdown] = useState(5);
+  const [riskRewardRatio, setRiskRewardRatio] = useState(2);
+  const [kellyCriterion, setKellyCriterion] = useState(0);
+  const [monteCarloResults, setMonteCarloResults] = useState<any[]>([]);
+  const [stressTestResults, setStressTestResults] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    loadRiskManagementData();
-  }, []);
+    calculatePositionSize();
+    calculateKellyCriterion();
+  }, [capital, riskPercentage, stopLossPips, leverage]);
 
-  const loadRiskManagementData = async () => {
-    setLoading(true);
-    try {
-      // تحميل جميع بيانات إدارة المخاطر
-      await Promise.all([
-        loadKellyResults(),
-        loadPortfolioOptimization(),
-        loadRiskParityStrategies(),
-        loadDrawdownAnalysis(),
-        loadRiskMetrics()
-      ]);
-    } catch (error) {
-      console.error('خطأ في تحميل بيانات إدارة المخاطر:', error);
-      toast.error('فشل في تحميل البيانات');
-    } finally {
-      setLoading(false);
+  const calculatePositionSize = () => {
+    const riskAmount = capital * (riskPercentage / 100);
+    const pipValue = riskAmount / stopLossPips;
+    setPositionSize(pipValue * leverage);
+  };
+
+  const calculateKellyCriterion = () => {
+    const winProbability = 0.5;
+    const winLossRatio = riskRewardRatio;
+    const kelly = winProbability - ((1 - winProbability) / winLossRatio);
+    setKellyCriterion(kelly * 100);
+  };
+
+  const runMonteCarloSimulation = () => {
+    const numSimulations = 1000;
+    const initialCapital = capital;
+    const winProbability = 0.6;
+    const averageWin = riskRewardRatio * stopLossPips;
+    const averageLoss = -stopLossPips;
+    const results = [];
+
+    for (let i = 0; i < numSimulations; i++) {
+      let currentCapital = initialCapital;
+      const trades = [];
+      for (let j = 0; j < 100; j++) {
+        const tradeResult = Math.random() < winProbability ? averageWin : averageLoss;
+        currentCapital += (tradeResult / 100) * currentCapital;
+        trades.push(currentCapital);
+      }
+      results.push({ id: i, trades });
     }
+
+    setMonteCarloResults(results);
   };
 
-  const loadKellyResults = async () => {
-    const results: Record<string, KellyCriterionResult> = {};
-    for (const asset of assets) {
-      const winRate = 0.6 + Math.random() * 0.2; // 60-80%
-      const avgWin = 0.02 + Math.random() * 0.03; // 2-5%
-      const avgLoss = -(0.01 + Math.random() * 0.02); // -1 إلى -3%
-      
-      results[asset] = await riskManagementService.calculateKellyCriterion(
-        asset, winRate, avgWin, avgLoss
-      );
-    }
-    setKellyResults(results);
+  const runStressTest = () => {
+    const scenarios = [
+      { name: 'الركود الاقتصادي', impact: -0.2 },
+      { name: 'حدث البجعة السوداء', impact: -0.5 },
+      { name: 'التضخم المفاجئ', impact: -0.1 }
+    ];
+
+    const results = scenarios.map(scenario => {
+      const finalCapital = capital * (1 + scenario.impact);
+      return {
+        name: scenario.name,
+        finalCapital
+      };
+    });
+
+    setStressTestResults(results);
   };
 
-  const loadPortfolioOptimization = async () => {
-    const expectedReturns = assets.map(() => 0.1 + Math.random() * 0.2); // 10-30%
-    const result = await riskManagementService.optimizePortfolio(
-      assets, expectedReturns, 0.5
-    );
-    setPortfolioOptimization(result);
-  };
+  const drawdownData = [
+    { name: 'Jan', drawdown: 2.5 },
+    { name: 'Feb', drawdown: 1.8 },
+    { name: 'Mar', drawdown: 3.2 },
+    { name: 'Apr', drawdown: 1.5 },
+    { name: 'May', drawdown: 2.8 },
+    { name: 'Jun', drawdown: 0.9 }
+  ];
 
-  const loadRiskParityStrategies = async () => {
-    const strategies = await riskManagementService.calculateRiskParity(assets);
-    setRiskParityStrategies(strategies);
-  };
-
-  const loadDrawdownAnalysis = async () => {
-    // توليد بيانات تاريخية محاكاة للمحفظة
-    const portfolioHistory = Array.from({ length: 252 }, (_, i) => ({
-      date: Date.now() - (252 - i) * 24 * 60 * 60 * 1000,
-      value: 100000 * (1 + (Math.random() - 0.45) * 0.1) ** i
-    }));
-
-    const analysis = await riskManagementService.analyzeDrawdown(portfolioHistory);
-    setDrawdownAnalysis(analysis);
-  };
-
-  const loadRiskMetrics = async () => {
-    const metrics = await riskManagementService.calculateRiskMetrics({});
-    setRiskMetrics(metrics);
-  };
-
-  const handleOptimizePortfolio = async () => {
-    setLoading(true);
-    try {
-      await loadPortfolioOptimization();
-      toast.success('تم تحسين المحفظة بنجاح! 📊');
-    } catch (error) {
-      toast.error('فشل في تحسين المحفظة');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCalculateKelly = async () => {
-    setLoading(true);
-    try {
-      await loadKellyResults();
-      toast.success('تم حساب معيار كيلي بنجاح! 🎯');
-    } catch (error) {
-      toast.error('فشل في حساب معيار كيلي');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getRiskLevelColor = (level: string) => {
-    switch (level) {
-      case 'low': case 'safe': case 'conservative': return 'text-trading-up';
-      case 'medium': case 'warning': case 'moderate': return 'text-yellow-400';
-      case 'high': case 'danger': case 'aggressive': return 'text-trading-down';
-      case 'extreme': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getRiskLevelBg = (level: string) => {
-    switch (level) {
-      case 'low': case 'safe': case 'conservative': return 'bg-trading-up';
-      case 'medium': case 'warning': case 'moderate': return 'bg-yellow-600';
-      case 'high': case 'danger': case 'aggressive': return 'bg-trading-down';
-      case 'extreme': return 'bg-red-600';
-      default: return 'bg-gray-600';
-    }
-  };
-
-  const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const riskMetricsData = [
+    { name: 'Sharpe Ratio', value: 1.2 },
+    { name: 'Sortino Ratio', value: 1.5 },
+    { name: 'Max Drawdown', value: maxDrawdown },
+    { name: 'Win Rate', value: 60 }
+  ];
 
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* الرأس */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn("text-3xl font-bold text-white", lang === 'ar' && 'rtl text-right')}>
-            {lang === 'ar' ? 'إدارة المخاطر المتقدمة' : 'Advanced Risk Management'}
-          </h1>
-          <p className="text-gray-400">
-            {lang === 'ar' ? 'نظام شامل لإدارة وتحليل المخاطر المالية' : 'Comprehensive financial risk management system'}
-          </p>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-6 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {lang === 'ar' ? 'إدارة المخاطر' : 'Risk Management'}
+            </h1>
+            <p className="text-gray-300">
+              {lang === 'ar' ? 'أدوات متقدمة لإدارة المخاطر وحماية رأس المال' : 'Advanced tools for managing risk and protecting capital'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Select value={selectedProfile.name} onValueChange={(value) => {
+              const profile = riskProfiles.find(p => p.name === value);
+              if (profile) {
+                setSelectedProfile(profile);
+              }
+            }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder={lang === 'ar' ? 'اختر ملف المخاطر' : 'Select Risk Profile'} />
+              </SelectTrigger>
+              <SelectContent>
+                {riskProfiles.map(profile => (
+                  <SelectItem key={profile.name} value={profile.name}>
+                    {profile.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" className="text-white border-white/20">
+              <Calculator className="h-4 w-4 mr-2" />
+              {lang === 'ar' ? 'تحديث' : 'Refresh'}
+            </Button>
+          </div>
         </div>
-        
-        <Button
-          onClick={loadRiskManagementData}
-          disabled={loading}
-          className="bg-trading-primary hover:bg-blue-600"
-        >
-          <Shield className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'جاري التحديث...' : 'تحديث البيانات'}
-        </Button>
-      </div>
 
-      {/* مؤشرات المخاطر العامة */}
-      {riskMetrics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="bg-trading-card border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Shield className="h-8 w-8 text-blue-400" />
-                <div>
-                  <div className="text-lg font-bold text-white">
-                    {(riskMetrics.totalRisk * 100).toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-gray-400">إجمالي المخاطر</div>
-                </div>
+        {/* Risk Profile Description */}
+        <Card className="bg-white/10 backdrop-blur-md border-white/20">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              {lang === 'ar' ? 'ملف المخاطر المحدد' : 'Selected Risk Profile'}
+            </CardTitle>
+            <CardDescription className="text-gray-300">
+              {selectedProfile.description}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300">{lang === 'ar' ? 'تحمل المخاطر:' : 'Risk Tolerance:'}</Label>
+                <p className="text-white">{selectedProfile.riskTolerance}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-trading-card border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-8 w-8 text-trading-up" />
-                <div>
-                  <div className="text-lg font-bold text-white">
-                    {(riskMetrics.sharpeRatio || 0).toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-400">نسبة شارب</div>
-                </div>
+              <div>
+                <Label className="text-gray-300">{lang === 'ar' ? 'تخصيص رأس المال:' : 'Capital Allocation:'}</Label>
+                <p className="text-white">{(selectedProfile.capitalAllocation * 100).toFixed(1)}%</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-trading-card border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Target className="h-8 w-8 text-purple-400" />
-                <div>
-                  <div className="text-lg font-bold text-white">
-                    {riskMetrics.sortinoRatio?.toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-400">نسبة سورتينو</div>
-                </div>
+              <div>
+                <Label className="text-gray-300">{lang === 'ar' ? 'وقف الخسارة:' : 'Stop Loss:'}</Label>
+                <p className="text-white">{(selectedProfile.stopLoss * 100).toFixed(1)}%</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-trading-card border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <BarChart3 className="h-8 w-8 text-yellow-400" />
-                <div>
-                  <div className="text-lg font-bold text-white">
-                    {riskMetrics.calmarRatio?.toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-400">نسبة كالمار</div>
-                </div>
+              <div>
+                <Label className="text-gray-300">{lang === 'ar' ? 'جني الأرباح:' : 'Take Profit:'}</Label>
+                <p className="text-white">{(selectedProfile.takeProfit * 100).toFixed(1)}%</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-trading-card border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className={cn("h-8 w-8", getRiskLevelColor(riskMetrics.overallRiskScore))} />
-                <div>
-                  <div className={cn("text-lg font-bold", getRiskLevelColor(riskMetrics.overallRiskScore))}>
-                    {riskMetrics.overallRiskScore === 'low' ? 'منخفض' :
-                     riskMetrics.overallRiskScore === 'medium' ? 'متوسط' :
-                     riskMetrics.overallRiskScore === 'high' ? 'عالي' : 'خطير'}
-                  </div>
-                  <div className="text-sm text-gray-400">مستوى المخاطر</div>
-                </div>
+              <div>
+                <Label className="text-gray-300">{lang === 'ar' ? 'الرافعة المالية:' : 'Leverage:'}</Label>
+                <p className="text-white">{selectedProfile.leverage}x</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* المحتوى الرئيسي */}
-      <Tabs defaultValue="kelly" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-trading-card">
-          <TabsTrigger value="kelly">معيار كيلي</TabsTrigger>
-          <TabsTrigger value="portfolio">تحسين المحفظة</TabsTrigger>
-          <TabsTrigger value="risk-parity">Risk Parity</TabsTrigger>
-          <TabsTrigger value="drawdown">إدارة الانخفاض</TabsTrigger>
-          <TabsTrigger value="metrics">مقاييس المخاطر</TabsTrigger>
-        </TabsList>
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-md">
+            <TabsTrigger value="overview" className="text-white">
+              {lang === 'ar' ? 'نظرة عامة' : 'Overview'}
+            </TabsTrigger>
+            <TabsTrigger value="positioning" className="text-white">
+              {lang === 'ar' ? 'حجم المركز' : 'Positioning'}
+            </TabsTrigger>
+            <TabsTrigger value="simulation" className="text-white">
+              {lang === 'ar' ? 'المحاكاة' : 'Simulation'}
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="text-white">
+              {lang === 'ar' ? 'المقاييس' : 'Metrics'}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* معيار كيلي */}
-        <TabsContent value="kelly" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-trading-up" />
-                معيار كيلي لتحديد حجم المراكز
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex gap-4">
-                  <Button 
-                    onClick={handleCalculateKelly}
-                    disabled={loading}
-                    className="bg-trading-up hover:bg-green-600"
-                  >
-                    <Calculator className="h-4 w-4 mr-2" />
-                    {loading ? 'جاري الحساب...' : 'حساب معيار كيلي'}
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {Object.entries(kellyResults).map(([asset, result]) => (
-                    <Card key={asset} className="bg-trading-secondary border-gray-700">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-white text-lg">{asset}</CardTitle>
-                          <Badge 
-                            className={getRiskLevelBg(result.riskLevel)}
-                          >
-                            {result.riskLevel === 'conservative' ? 'محافظ' :
-                             result.riskLevel === 'moderate' ? 'متوازن' : 'عدواني'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-3 bg-trading-bg rounded">
-                              <div className="text-xl font-bold text-trading-up">
-                                {(result.optimalFraction * 100).toFixed(1)}%
-                              </div>
-                              <div className="text-xs text-gray-400">الحجم الأمثل</div>
-                            </div>
-                            <div className="text-center p-3 bg-trading-bg rounded">
-                              <div className="text-xl font-bold text-white">
-                                {(result.winProbability * 100).toFixed(1)}%
-                              </div>
-                              <div className="text-xs text-gray-400">معدل الفوز</div>
-                            </div>
-                            <div className="text-center p-3 bg-trading-bg rounded">
-                              <div className="text-xl font-bold text-blue-400">
-                                {(result.expectedReturn * 100).toFixed(2)}%
-                              </div>
-                              <div className="text-xs text-gray-400">العائد المتوقع</div>
-                            </div>
-                            <div className="text-center p-3 bg-trading-bg rounded">
-                              <div className="text-xl font-bold text-red-400">
-                                {(result.maxDrawdownEstimate * 100).toFixed(1)}%
-                              </div>
-                              <div className="text-xs text-gray-400">أقصى انخفاض متوقع</div>
-                            </div>
-                          </div>
-                          
-                          <div className="p-3 bg-blue-900/30 border border-blue-700 rounded">
-                            <div className="text-sm text-blue-200">{result.recommendation}</div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* تحسين المحفظة */}
-        <TabsContent value="portfolio" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-blue-400" />
-                تحسين المحفظة (Modern Portfolio Theory)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <Button 
-                  onClick={handleOptimizePortfolio}
-                  disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  {loading ? 'جاري التحسين...' : 'تحسين المحفظة'}
-                </Button>
-
-                {portfolioOptimization && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                        <div className="text-2xl font-bold text-trading-up">
-                          {(portfolioOptimization.expectedReturn * 100).toFixed(2)}%
-                        </div>
-                        <div className="text-sm text-gray-400">العائد المتوقع</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-400">
-                          {(portfolioOptimization.expectedVolatility * 100).toFixed(2)}%
-                        </div>
-                        <div className="text-sm text-gray-400">التقلبات المتوقعة</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                        <div className="text-2xl font-bold text-blue-400">
-                          {portfolioOptimization.sharpeRatio.toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-400">نسبة شارب</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* الأوزان المثلى */}
-                      <div className="space-y-4">
-                        <h4 className="font-bold text-white">الأوزان المثلى:</h4>
-                        {Object.entries(portfolioOptimization.optimalWeights).map(([asset, weight]) => (
-                          <div key={asset} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
-                            <span className="text-white">{asset}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-bold">{(weight * 100).toFixed(1)}%</span>
-                              <Progress value={weight * 100} className="w-20 h-2" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* الحدود الكفؤة */}
-                      <div className="h-80">
-                        <h4 className="font-bold text-white mb-4">الحدود الكفؤة:</h4>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={portfolioOptimization.efficientFrontier}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis 
-                              dataKey="risk" 
-                              stroke="#9CA3AF"
-                              label={{ value: 'المخاطر', position: 'insideBottom', offset: -10 }}
-                            />
-                            <YAxis 
-                              dataKey="return" 
-                              stroke="#9CA3AF"
-                              label={{ value: 'العائد', angle: -90, position: 'insideLeft' }}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#1F2937', 
-                                border: '1px solid #374151',
-                                borderRadius: '8px'
-                              }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="return" 
-                              stroke="#3B82F6" 
-                              strokeWidth={3}
-                              dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-white">التوصيات:</h4>
-                      <ul className="space-y-1">
-                        {portfolioOptimization.recommendations.map((rec, idx) => (
-                          <li key={idx} className="text-gray-300 text-sm">• {rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Risk Parity */}
-        <TabsContent value="risk-parity" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Scale className="h-5 w-5 text-purple-400" />
-                استراتيجية Risk Parity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-400">
-                  توزيع المخاطر بالتساوي عبر جميع الأصول بدلاً من توزيع رؤوس الأموال
-                </p>
-
-                <div className="grid grid-cols-1 gap-4">
-                  {riskParityStrategies.map((strategy, idx) => (
-                    <div key={idx} className="p-4 bg-trading-secondary rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="font-bold text-white text-lg">{strategy.asset}</span>
-                        <Badge variant="outline" className="border-purple-400 text-purple-400">
-                          التقلبات: {(strategy.volatility * 100).toFixed(1)}%
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-gray-300">
-                            {(strategy.currentWeight * 100).toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-gray-400">الوزن الحالي</div>
-                        </div>
-                        
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-purple-400">
-                            {(strategy.adjustedWeight * 100).toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-gray-400">الوزن المعدل</div>
-                        </div>
-                        
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-400">
-                            {(strategy.riskContribution * 100).toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-gray-400">مساهمة المخاطر</div>
-                        </div>
-                        
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-trading-up">
-                            {(strategy.targetRiskContribution * 100).toFixed(1)}%
-                          </div>
-                          <div className="text-xs text-gray-400">المخاطر المستهدفة</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">تقدم التعديل</span>
-                          <span className="text-white">
-                            {Math.abs(strategy.adjustedWeight - strategy.currentWeight) < 0.05 ? 'مكتمل' : 'يحتاج تعديل'}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={Math.min(100, (1 - Math.abs(strategy.adjustedWeight - strategy.currentWeight) / 0.1) * 100)} 
-                          className="h-2" 
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* إدارة الانخفاض */}
-        <TabsContent value="drawdown" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <TrendingDown className="h-5 w-5 text-trading-down" />
-                إدارة الانخفاض (Drawdown Management)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {drawdownAnalysis && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-trading-down">
-                        {(Math.abs(drawdownAnalysis.currentDrawdown) * 100).toFixed(2)}%
-                      </div>
-                      <div className="text-sm text-gray-400">الانخفاض الحالي</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-red-400">
-                        {(Math.abs(drawdownAnalysis.maxDrawdown) * 100).toFixed(2)}%
-                      </div>
-                      <div className="text-sm text-gray-400">أقصى انخفاض</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-400">
-                        {drawdownAnalysis.drawdownDuration}
-                      </div>
-                      <div className="text-sm text-gray-400">مدة الانخفاض (أيام)</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-blue-400">
-                        {drawdownAnalysis.recoveryTime}
-                      </div>
-                      <div className="text-sm text-gray-400">وقت التعافي (أيام)</div>
-                    </div>
-                  </div>
-
-                  {/* مخطط الانخفاض */}
-                  <div className="h-80">
-                    <h4 className="font-bold text-white mb-4">تاريخ الانخفاض:</h4>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={drawdownAnalysis.drawdownHistory.slice(-50)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis 
-                          dataKey="date" 
-                          stroke="#9CA3AF"
-                          tickFormatter={(value) => new Date(value).toLocaleDateString()}
-                        />
-                        <YAxis stroke="#9CA3AF" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#1F2937', 
-                            border: '1px solid #374151',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="drawdown" 
-                          stroke="#EF4444" 
-                          fill="#EF4444"
-                          fillOpacity={0.3}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* مقاييس المخاطر */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-white">Value at Risk (VaR):</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between p-2 bg-trading-secondary rounded">
-                          <span className="text-gray-400">VaR 95%:</span>
-                          <span className="text-red-400 font-bold">
-                            {(drawdownAnalysis.riskMetrics.var95 * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between p-2 bg-trading-secondary rounded">
-                          <span className="text-gray-400">VaR 99%:</span>
-                          <span className="text-red-400 font-bold">
-                            {(drawdownAnalysis.riskMetrics.var99 * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-white">Conditional VaR (CVaR):</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between p-2 bg-trading-secondary rounded">
-                          <span className="text-gray-400">CVaR 95%:</span>
-                          <span className="text-red-400 font-bold">
-                            {(drawdownAnalysis.riskMetrics.cvar95 * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between p-2 bg-trading-secondary rounded">
-                          <span className="text-gray-400">CVaR 99%:</span>
-                          <span className="text-red-400 font-bold">
-                            {(drawdownAnalysis.riskMetrics.cvar99 * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-white">التوصيات:</h4>
-                    <ul className="space-y-1">
-                      {drawdownAnalysis.recommendations.map((rec, idx) => (
-                        <li key={idx} className="text-gray-300 text-sm">• {rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* مقاييس المخاطر */}
-        <TabsContent value="metrics" className="space-y-6">
-          {riskMetrics && (
-            <>
-              <Card className="bg-trading-card border-gray-800">
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/10 backdrop-blur-md border-white/20">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-yellow-400" />
-                    توزيع المخاطر
+                    <TrendingDown className="h-5 w-5" />
+                    {lang === 'ar' ? 'اتجاهات السحب' : 'Drawdown Trends'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">مخاطر التركز:</span>
-                          <span className="text-white font-bold">
-                            {(riskMetrics.concentrationRisk * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <Progress value={riskMetrics.concentrationRisk * 100} className="h-3" />
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">مخاطر السيولة:</span>
-                          <span className="text-white font-bold">
-                            {(riskMetrics.liquidityRisk * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <Progress value={riskMetrics.liquidityRisk * 100} className="h-3" />
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">مخاطر السوق:</span>
-                          <span className="text-white font-bold">
-                            {(riskMetrics.marketRisk * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <Progress value={riskMetrics.marketRisk * 100} className="h-3" />
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">المخاطر التشغيلية:</span>
-                          <span className="text-white font-bold">
-                            {(riskMetrics.operationalRisk * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <Progress value={riskMetrics.operationalRisk * 100} className="h-3" />
-                      </div>
-                    </div>
-
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart>
-                          <defs>
-                            {COLORS.map((color, index) => (
-                              <pattern key={index} id={`pattern-${index}`} patternUnits="userSpaceOnUse" width="4" height="4">
-                                <rect width="4" height="4" fill={color} />
-                              </pattern>
-                            ))}
-                          </defs>
-                          <PieChart
-                            data={[
-                              { name: 'مخاطر التركز', value: riskMetrics.concentrationRisk * 100 },
-                              { name: 'مخاطر السيولة', value: riskMetrics.liquidityRisk * 100 },
-                              { name: 'مخاطر السوق', value: riskMetrics.marketRisk * 100 },
-                              { name: 'المخاطر التشغيلية', value: riskMetrics.operationalRisk * 100 }
-                            ]}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={120}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {COLORS.map((color, index) => (
-                              <Cell key={`cell-${index}`} fill={color} />
-                            ))}
-                          </PieChart>
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: '#1F2937', 
-                              border: '1px solid #374151',
-                              borderRadius: '8px'
-                            }}
-                          />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={drawdownData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.7)" />
+                      <YAxis stroke="rgba(255,255,255,0.7)" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(0,0,0,0.8)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Line type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2} name="Drawdown" />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              <Card className="bg-trading-card border-gray-800">
+              <Card className="bg-white/10 backdrop-blur-md border-white/20">
                 <CardHeader>
-                  <CardTitle className="text-white">المؤشرات المعدلة للمخاطر</CardTitle>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    {lang === 'ar' ? 'مقاييس المخاطر' : 'Risk Metrics'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-trading-up">
-                        {riskMetrics.riskAdjustedReturn.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-400">العائد المعدل للمخاطر</div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={riskMetricsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.7)" />
+                      <YAxis stroke="rgba(255,255,255,0.7)" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(0,0,0,0.8)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar dataKey="value" fill="#3b82f6" name="Value" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Positioning Tab */}
+          <TabsContent value="positioning">
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  {lang === 'ar' ? 'حساب حجم المركز' : 'Position Size Calculation'}
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  {lang === 'ar' ? 'حساب حجم المركز بناءً على تحمل المخاطر' : 'Calculate position size based on risk tolerance'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="capital" className="text-gray-300">
+                      {lang === 'ar' ? 'رأس المال:' : 'Capital:'}
+                    </Label>
+                    <Input
+                      id="capital"
+                      type="number"
+                      value={capital}
+                      onChange={(e) => setCapital(parseFloat(e.target.value))}
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="riskPercentage" className="text-gray-300">
+                      {lang === 'ar' ? 'نسبة المخاطرة (%):' : 'Risk Percentage (%):'}
+                    </Label>
+                    <Input
+                      id="riskPercentage"
+                      type="number"
+                      value={riskPercentage}
+                      onChange={(e) => setRiskPercentage(parseFloat(e.target.value))}
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="stopLossPips" className="text-gray-300">
+                      {lang === 'ar' ? 'وقف الخسارة (نقطة):' : 'Stop Loss (Pips):'}
+                    </Label>
+                    <Input
+                      id="stopLossPips"
+                      type="number"
+                      value={stopLossPips}
+                      onChange={(e) => setStopLossPips(parseFloat(e.target.value))}
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="leverage" className="text-gray-300">
+                      {lang === 'ar' ? 'الرافعة المالية:' : 'Leverage:'}
+                    </Label>
+                    <Input
+                      id="leverage"
+                      type="number"
+                      value={leverage}
+                      onChange={(e) => setLeverage(parseFloat(e.target.value))}
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">
+                    {lang === 'ar' ? 'حجم المركز المحسوب:' : 'Calculated Position Size:'}
+                  </Label>
+                  <p className="text-white">
+                    {positionSize.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-300">
+                    {lang === 'ar' ? 'معيار كيلي:' : 'Kelly Criterion:'}
+                  </Label>
+                  <p className="text-white">
+                    {kellyCriterion.toFixed(2)}%
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Simulation Tab */}
+          <TabsContent value="simulation">
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  {lang === 'ar' ? 'محاكاة المخاطر' : 'Risk Simulation'}
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  {lang === 'ar' ? 'تشغيل محاكاة مونت كارلو واختبارات الضغط' : 'Run Monte Carlo simulation and stress tests'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-4">
+                  <Button onClick={runMonteCarloSimulation} className="bg-blue-600 hover:bg-blue-700">
+                    {lang === 'ar' ? 'تشغيل مونت كارلو' : 'Run Monte Carlo'}
+                  </Button>
+                  <Button onClick={runStressTest} className="bg-red-600 hover:bg-red-700">
+                    {lang === 'ar' ? 'تشغيل اختبار الضغط' : 'Run Stress Test'}
+                  </Button>
+                </div>
+
+                {monteCarloResults.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-white font-medium">{lang === 'ar' ? 'نتائج مونت كارلو:' : 'Monte Carlo Results:'}</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="name" stroke="rgba(255,255,255,0.7)" />
+                        <YAxis stroke="rgba(255,255,255,0.7)" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Legend />
+                        {monteCarloResults.slice(0, 5).map(result => (
+                          <Line key={result.id} data={result.trades} strokeWidth={1} stroke="#4ecdc4" name={`Simulation ${result.id}`} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {stressTestResults.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-white font-medium">{lang === 'ar' ? 'نتائج اختبار الضغط:' : 'Stress Test Results:'}</h4>
+                    <div className="space-y-2">
+                      {stressTestResults.map((result, index) => (
+                        <div key={index} className="p-3 bg-white/5 rounded-lg">
+                          <p className="text-white">{result.name}: {result.finalCapital.toFixed(2)}</p>
+                        </div>
+                      ))}
                     </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-blue-400">
-                        {riskMetrics.informationRatio.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-400">نسبة المعلومات</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Metrics Tab */}
+          <TabsContent value="metrics">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Percent className="h-5 w-5" />
+                    {lang === 'ar' ? 'توزيع المخاطر' : 'Risk Allocation'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'BTC', value: 40 },
+                          { name: 'ETH', value: 30 },
+                          { name: 'Stocks', value: 20 },
+                          { name: 'Cash', value: 10 }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {[0, 1, 2, 3].map((index) => (
+                          <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    {lang === 'ar' ? 'التعرض لرأس المال' : 'Capital Exposure'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">{lang === 'ar' ? 'رأس المال المستخدم:' : 'Capital at Risk:'}</span>
+                      <span className="text-white font-bold">{(capital * (riskPercentage / 100)).toFixed(2)}</span>
                     </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-purple-400">
-                        {riskMetrics.calmarRatio.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-400">نسبة كالمار</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-trading-secondary rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-400">
-                        {riskMetrics.sortinoRatio.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-gray-400">نسبة سورتينو</div>
-                    </div>
+                    <Progress value={riskPercentage} className="h-2" />
+                    <p className="text-gray-300 text-sm">
+                      {lang === 'ar' ? 'الحد الأقصى للسحب:' : 'Max Drawdown:'} {maxDrawdown}%
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
