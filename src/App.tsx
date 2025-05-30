@@ -9,6 +9,7 @@ import AIModels from '@/pages/AIModels';
 import Charts from '@/pages/Charts';
 import Portfolio from '@/pages/Portfolio';
 import Analysis from '@/pages/Analysis';
+import AlternativeData from '@/pages/AlternativeData';
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 
@@ -24,6 +25,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/analysis" element={<Analysis />} />
+            <Route path="/alternative-data" element={<AlternativeData />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/trading-bot" element={<TradingBot />} />
             <Route path="/ai-models" element={<AIModels />} />
