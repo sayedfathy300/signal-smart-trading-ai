@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { marketDataService, MarketData } from '@/services/marketDataService';
-import { TrendingUp, TrendingDown, DollarSign, Euro, Yen, PoundSterling } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Euro, BadgeJapaneseYen, PoundSterling } from 'lucide-react';
 
 interface CurrencyPairsProps {
   lang?: 'en' | 'ar';
@@ -28,7 +27,7 @@ export const CurrencyPairs: React.FC<CurrencyPairsProps> = ({ lang = 'en', onSel
     // أزواج العملات الرئيسية
     { symbol: 'EUR/USD', name: 'Euro / US Dollar', baseIcon: <Euro className="h-4 w-4" />, quoteIcon: <DollarSign className="h-4 w-4" />, category: 'major' },
     { symbol: 'GBP/USD', name: 'British Pound / US Dollar', baseIcon: <PoundSterling className="h-4 w-4" />, quoteIcon: <DollarSign className="h-4 w-4" />, category: 'major' },
-    { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen', baseIcon: <DollarSign className="h-4 w-4" />, quoteIcon: <Yen className="h-4 w-4" />, category: 'major' },
+    { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen', baseIcon: <DollarSign className="h-4 w-4" />, quoteIcon: <BadgeJapaneseYen className="h-4 w-4" />, category: 'major' },
     { symbol: 'USD/CHF', name: 'US Dollar / Swiss Franc', baseIcon: <DollarSign className="h-4 w-4" />, quoteIcon: <span className="text-xs font-bold">CHF</span>, category: 'major' },
     { symbol: 'AUD/USD', name: 'Australian Dollar / US Dollar', baseIcon: <span className="text-xs font-bold">AUD</span>, quoteIcon: <DollarSign className="h-4 w-4" />, category: 'major' },
     { symbol: 'USD/CAD', name: 'US Dollar / Canadian Dollar', baseIcon: <DollarSign className="h-4 w-4" />, quoteIcon: <span className="text-xs font-bold">CAD</span>, category: 'major' },
@@ -36,10 +35,10 @@ export const CurrencyPairs: React.FC<CurrencyPairsProps> = ({ lang = 'en', onSel
 
     // أزواج العملات الثانوية
     { symbol: 'EUR/GBP', name: 'Euro / British Pound', baseIcon: <Euro className="h-4 w-4" />, quoteIcon: <PoundSterling className="h-4 w-4" />, category: 'minor' },
-    { symbol: 'EUR/JPY', name: 'Euro / Japanese Yen', baseIcon: <Euro className="h-4 w-4" />, quoteIcon: <Yen className="h-4 w-4" />, category: 'minor' },
-    { symbol: 'GBP/JPY', name: 'British Pound / Japanese Yen', baseIcon: <PoundSterling className="h-4 w-4" />, quoteIcon: <Yen className="h-4 w-4" />, category: 'minor' },
-    { symbol: 'AUD/JPY', name: 'Australian Dollar / Japanese Yen', baseIcon: <span className="text-xs font-bold">AUD</span>, quoteIcon: <Yen className="h-4 w-4" />, category: 'minor' },
-    { symbol: 'CAD/JPY', name: 'Canadian Dollar / Japanese Yen', baseIcon: <span className="text-xs font-bold">CAD</span>, quoteIcon: <Yen className="h-4 w-4" />, category: 'minor' },
+    { symbol: 'EUR/JPY', name: 'Euro / Japanese Yen', baseIcon: <Euro className="h-4 w-4" />, quoteIcon: <BadgeJapaneseYen className="h-4 w-4" />, category: 'minor' },
+    { symbol: 'GBP/JPY', name: 'British Pound / Japanese Yen', baseIcon: <PoundSterling className="h-4 w-4" />, quoteIcon: <BadgeJapaneseYen className="h-4 w-4" />, category: 'minor' },
+    { symbol: 'AUD/JPY', name: 'Australian Dollar / Japanese Yen', baseIcon: <span className="text-xs font-bold">AUD</span>, quoteIcon: <BadgeJapaneseYen className="h-4 w-4" />, category: 'minor' },
+    { symbol: 'CAD/JPY', name: 'Canadian Dollar / Japanese Yen', baseIcon: <span className="text-xs font-bold">CAD</span>, quoteIcon: <BadgeJapaneseYen className="h-4 w-4" />, category: 'minor' },
 
     // أزواج العملات الغريبة
     { symbol: 'USD/TRY', name: 'US Dollar / Turkish Lira', baseIcon: <DollarSign className="h-4 w-4" />, quoteIcon: <span className="text-xs font-bold">TRY</span>, category: 'exotic' },

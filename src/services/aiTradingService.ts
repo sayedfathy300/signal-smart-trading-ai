@@ -1,3 +1,4 @@
+import { marketDataService } from './marketDataService';
 
 export interface AISignal {
   symbol: string;
