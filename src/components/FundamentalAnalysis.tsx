@@ -43,6 +43,9 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
         fundamentalAnalysisService.getEconomicIndicators()
       ]);
 
+      console.log('Loaded fundamental data:', fundamentalsData);
+      console.log('Loaded economic data:', economicData);
+
       setFundamentalData(fundamentalsData);
       setEconomicData(economicData);
     } catch (error) {
@@ -52,7 +55,16 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
     }
   };
 
+  const safeToFixed = (value: any, decimals: number = 2): string => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '0.00';
+    }
+    return Number(value).toFixed(decimals);
+  };
+
   const getValuationColor = (ratio: number, metric: string) => {
+    if (!ratio || isNaN(ratio)) return '#9CA3AF';
+    
     switch (metric) {
       case 'PE':
         if (ratio < 15) return '#00FF88';
@@ -72,6 +84,8 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
   };
 
   const getValuationSignal = (ratio: number, metric: string) => {
+    if (!ratio || isNaN(ratio)) return 'HOLD';
+    
     switch (metric) {
       case 'PE':
         if (ratio < 15) return 'BUY';
@@ -157,24 +171,26 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-sm text-gray-400">{lang === 'ar' ? 'القطاع' : 'Sector'}</div>
-              <div className="font-bold text-lg">{fundamentalData.sector}</div>
+              <div className="font-bold text-lg">{fundamentalData.sector || 'N/A'}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-400">{lang === 'ar' ? 'الصناعة' : 'Industry'}</div>
-              <div className="font-bold text-lg">{fundamentalData.industry}</div>
+              <div className="font-bold text-lg">{fundamentalData.industry || 'N/A'}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-400">{lang === 'ar' ? 'القيمة السوقية' : 'Market Cap'}</div>
-              <div className="font-bold text-lg">${fundamentalData.marketCap}</div>
+              <div className="font-bold text-lg">{fundamentalData.marketCap || 'N/A'}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-400">{lang === 'ar' ? 'عدد الموظفين' : 'Employees'}</div>
-              <div className="font-bold text-lg">{fundamentalData.employees?.toLocaleString()}</div>
+              <div className="font-bold text-lg">{fundamentalData.employees?.toLocaleString() || 'N/A'}</div>
             </div>
           </div>
-          <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
-            <p className="text-gray-300 text-sm">{fundamentalData.description}</p>
-          </div>
+          {fundamentalData.description && (
+            <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
+              <p className="text-gray-300 text-sm">{fundamentalData.description}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -193,7 +209,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 className="text-2xl font-bold"
                 style={{ color: getValuationColor(fundamentalData.pe_ratio, 'PE') }}
               >
-                {fundamentalData.pe_ratio.toFixed(2)}
+                {safeToFixed(fundamentalData.pe_ratio)}
               </div>
               <Badge 
                 variant={
@@ -204,7 +220,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 {getValuationSignal(fundamentalData.pe_ratio, 'PE')}
               </Badge>
               <div className="text-xs text-gray-400 mt-2">
-                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {fundamentalData.sector_pe?.toFixed(2)}
+                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {safeToFixed(fundamentalData.sector_pe)}
               </div>
             </div>
           </CardContent>
@@ -223,7 +239,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 className="text-2xl font-bold"
                 style={{ color: getValuationColor(fundamentalData.pb_ratio, 'PB') }}
               >
-                {fundamentalData.pb_ratio.toFixed(2)}
+                {safeToFixed(fundamentalData.pb_ratio)}
               </div>
               <Badge 
                 variant={
@@ -234,7 +250,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 {getValuationSignal(fundamentalData.pb_ratio, 'PB')}
               </Badge>
               <div className="text-xs text-gray-400 mt-2">
-                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {fundamentalData.sector_pb?.toFixed(2)}
+                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {safeToFixed(fundamentalData.sector_pb)}
               </div>
             </div>
           </CardContent>
@@ -253,7 +269,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 className="text-2xl font-bold"
                 style={{ color: getValuationColor(fundamentalData.roe, 'ROE') }}
               >
-                {fundamentalData.roe.toFixed(1)}%
+                {safeToFixed(fundamentalData.roe, 1)}%
               </div>
               <Badge 
                 variant={
@@ -264,7 +280,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
                 {getValuationSignal(fundamentalData.roe, 'ROE')}
               </Badge>
               <div className="text-xs text-gray-400 mt-2">
-                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {fundamentalData.sector_roe?.toFixed(1)}%
+                {lang === 'ar' ? 'القطاع:' : 'Sector Avg:'} {safeToFixed(fundamentalData.sector_roe, 1)}%
               </div>
             </div>
           </CardContent>
@@ -280,13 +296,13 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
           <CardContent>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-400">
-                {fundamentalData.dividend_yield?.toFixed(2)}%
+                {safeToFixed(fundamentalData.dividend_yield)}%
               </div>
               <Badge variant="default">
-                {fundamentalData.dividend_yield > 3 ? 'HIGH' : fundamentalData.dividend_yield > 1 ? 'MEDIUM' : 'LOW'}
+                {(fundamentalData.dividend_yield || 0) > 3 ? 'HIGH' : (fundamentalData.dividend_yield || 0) > 1 ? 'MEDIUM' : 'LOW'}
               </Badge>
               <div className="text-xs text-gray-400 mt-2">
-                {lang === 'ar' ? 'نمو سنوي:' : 'Annual Growth:'} {fundamentalData.dividend_growth?.toFixed(1)}%
+                {lang === 'ar' ? 'نمو سنوي:' : 'Annual Growth:'} {safeToFixed(fundamentalData.dividend_growth, 1)}%
               </div>
             </div>
           </CardContent>
@@ -313,7 +329,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={fundamentalData.revenue_history}>
+                    <AreaChart data={fundamentalData.revenue_history || []}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="year" stroke="#9CA3AF" />
                       <YAxis stroke="#9CA3AF" />
@@ -350,7 +366,7 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={fundamentalData.net_income_history}>
+                    <BarChart data={fundamentalData.net_income_history || []}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis dataKey="year" stroke="#9CA3AF" />
                       <YAxis stroke="#9CA3AF" />
@@ -382,25 +398,25 @@ export function FundamentalAnalysis({ symbol, lang = 'ar' }: FundamentalAnalysis
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="text-sm text-gray-400">{lang === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue'}</div>
-                  <div className="text-xl font-bold text-green-400">${fundamentalData.total_revenue}</div>
+                  <div className="text-xl font-bold text-green-400">{fundamentalData.total_revenue || 'N/A'}</div>
                   <div className="text-xs text-gray-400 mt-1">
-                    YoY: {fundamentalData.revenue_growth > 0 ? '+' : ''}{fundamentalData.revenue_growth.toFixed(1)}%
+                    YoY: {fundamentalData.revenue_growth > 0 ? '+' : ''}{safeToFixed(fundamentalData.revenue_growth, 1)}%
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-gray-400">{lang === 'ar' ? 'إجمالي الأصول' : 'Total Assets'}</div>
-                  <div className="text-xl font-bold text-blue-400">${fundamentalData.total_assets}</div>
+                  <div className="text-xl font-bold text-blue-400">{fundamentalData.total_assets || 'N/A'}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-gray-400">{lang === 'ar' ? 'إجمالي الديون' : 'Total Debt'}</div>
-                  <div className="text-xl font-bold text-red-400">${fundamentalData.total_debt}</div>
+                  <div className="text-xl font-bold text-red-400">{fundamentalData.total_debt || 'N/A'}</div>
                   <div className="text-xs text-gray-400 mt-1">
-                    D/E: {fundamentalData.debt_to_equity?.toFixed(2)}
+                    D/E: {safeToFixed(fundamentalData.debt_to_equity)}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-gray-400">{lang === 'ar' ? 'التدفق النقدي الحر' : 'Free Cash Flow'}</div>
-                  <div className="text-xl font-bold text-green-400">${fundamentalData.free_cash_flow}</div>
+                  <div className="text-xl font-bold text-green-400">{fundamentalData.free_cash_flow || 'N/A'}</div>
                 </div>
               </div>
             </CardContent>
