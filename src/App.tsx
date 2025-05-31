@@ -28,10 +28,19 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useState } from 'react';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   const [lang, setLang] = useState<'en' | 'ar'>('ar');
+
+  console.log('App component rendering, lang:', lang);
 
   return (
     <QueryClientProvider client={queryClient}>

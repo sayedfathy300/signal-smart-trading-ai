@@ -9,8 +9,10 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ lang, setLang }: AppLayoutProps) {
+  console.log('AppLayout rendering, lang:', lang);
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-trading-bg">
       <header className="bg-trading-card border-b border-gray-800 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -22,7 +24,7 @@ export function AppLayout({ lang, setLang }: AppLayoutProps) {
         </div>
       </header>
       
-      <main className="flex-1">
+      <main className="flex-1 p-6">
         <Outlet />
       </main>
     </div>
