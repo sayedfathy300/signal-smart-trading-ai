@@ -1,4 +1,3 @@
-
 import { BacktestResult, BacktestTrade, EquityPoint, MonthlyReturn } from './tradingPlatformService';
 
 export interface BacktestConfiguration {
@@ -50,6 +49,22 @@ export interface PerformanceAnalysis {
     totalReturn: number;
     averageHoldingTime: number;
   }>;
+}
+
+export interface BacktestResult {
+  strategyId: string;
+  startDate: number;
+  endDate: number;
+  totalReturn: number;
+  annualizedReturn: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+  winRate: number;
+  totalTrades: number;
+  profitFactor: number;
+  trades: BacktestTrade[];
+  equity: EquityPoint[];
+  monthlyReturns: MonthlyReturn[];
 }
 
 class BacktestingService {

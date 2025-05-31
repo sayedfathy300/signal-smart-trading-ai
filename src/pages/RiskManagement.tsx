@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import RiskManagementComponent from '@/components/RiskManagement';
+import CapitalManagement from '@/components/CapitalManagement';
 
 interface OutletContext {
   lang: 'en' | 'ar';
@@ -10,7 +10,7 @@ interface OutletContext {
 const RiskManagement = () => {
   const { lang } = useOutletContext<OutletContext>();
   
-  return <RiskManagementComponent lang={lang} />;
+  return <CapitalManagement lang={lang} />;
 };
 
 export default RiskManagement;

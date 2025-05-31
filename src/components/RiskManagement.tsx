@@ -1,26 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
-import { 
-  Shield, 
-  AlertTriangle, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity,
-  Target,
-  BarChart3,
-  PieChart,
-  Settings,
-  RefreshCw,
-  Brain,
-  Zap
-} from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { Shield, TrendingUp, AlertTriangle, Calculator, BarChart3, Target, DollarSign, Activity } from 'lucide-react';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { tradingPlatformService, RiskMetrics } from '@/services/tradingPlatformService';
 
