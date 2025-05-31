@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Index from '@/pages/Index';
 import Dashboard from '@/pages/Dashboard';
+import Charts from '@/pages/Charts';
 
 console.log('=== APP.TSX LOADING ===');
 
@@ -60,7 +61,7 @@ function App() {
                         } />
                         <Route path="/charts" element={
                           <ErrorBoundary>
-                            <SafeFallback pageName="Charts / الرسوم البيانية" />
+                            <Charts lang={lang} />
                           </ErrorBoundary>
                         } />
                         <Route path="/analysis" element={
