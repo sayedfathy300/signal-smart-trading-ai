@@ -14,6 +14,13 @@ export interface MarketData {
   spread?: number;
 }
 
+export interface MarketOverviewData {
+  indices: { name: string; value: number; change: number }[];
+  currencies: { name: string; value: number; change: number }[];
+  commodities: { name: string; value: number; change: number }[];
+  trending: { ticker: string; companyName: string; price: number; change: number; sparklineData: number[] }[];
+}
+
 export interface CandlestickData {
   timestamp: number;
   open: number;
@@ -668,8 +675,8 @@ class MarketDataService {
     };
   }
 
-  // Add the missing getMarketOverview method
-  async getMarketOverview(): Promise<MarketData> {
+  // Add the missing getMarketOverview method with correct return type
+  async getMarketOverview(): Promise<MarketOverviewData> {
     try {
       console.log('🏛️ جلب نظرة عامة على السوق');
 
@@ -840,7 +847,7 @@ class MarketDataService {
     return data;
   }
 
-  private getMockMarketOverview(): MarketData {
+  private getMockMarketOverview(): MarketOverviewData {
     return {
       indices: this.getMockIndicesData(),
       currencies: this.getMockCurrenciesData(),

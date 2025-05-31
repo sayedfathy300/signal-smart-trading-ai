@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { marketDataService } from '@/services/marketDataService';
+import { marketDataService, MarketOverviewData } from '@/services/marketDataService';
 import { Sparkline } from '@/components/Sparkline';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -8,19 +8,12 @@ interface MarketOverviewProps {
   lang: 'en' | 'ar';
 }
 
-interface MarketData {
-  indices: { name: string; value: number; change: number }[];
-  currencies: { name: string; value: number; change: number }[];
-  commodities: { name: string; value: number; change: number }[];
-  trending: { ticker: string; companyName: string; price: number; change: number; sparklineData: number[] }[];
-}
-
 const MarketOverview = ({ lang }: MarketOverviewProps) => {
   console.log('MarketOverview rendering with lang:', lang);
   
   const { data: marketData, isLoading, error } = useQuery({
     queryKey: ['marketData'],
-    queryFn: async () => {
+    queryFn: async (): Promise<MarketOverviewData> => {
       try {
         const data = await marketDataService.getMarketOverview();
         console.log('Market data fetched:', data);
@@ -69,7 +62,7 @@ const MarketOverview = ({ lang }: MarketOverviewProps) => {
   }
 
   // Safely access data with fallbacks
-  const safeMarketData = marketData || {
+  const safeMarketData: MarketOverviewData = marketData || {
     indices: [],
     currencies: [],
     commodities: [],
