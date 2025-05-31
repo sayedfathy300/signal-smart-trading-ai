@@ -21,11 +21,16 @@ import {
   Wallet,
   Bot,
   Globe,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  Cpu
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { tradingPlatformService, Portfolio, TradingStrategy, TradingAccount, TradingOrder } from '@/services/tradingPlatformService';
+import RiskManagement from '@/components/RiskManagement';
+import HighFrequencyTrading from '@/components/HighFrequencyTrading';
+import BacktestingDashboard from '@/components/BacktestingDashboard';
 import { toast } from 'sonner';
 
 interface TradingPlatformProps {
@@ -328,11 +333,12 @@ const TradingPlatform = ({ lang = 'ar' }: TradingPlatformProps) => {
 
       {/* المحتوى الرئيسي */}
       <Tabs defaultValue="strategies" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-trading-card">
+        <TabsList className="grid w-full grid-cols-6 bg-trading-card">
           <TabsTrigger value="strategies">الاستراتيجيات</TabsTrigger>
           <TabsTrigger value="portfolio">المحفظة</TabsTrigger>
-          <TabsTrigger value="orders">الأوامر</TabsTrigger>
-          <TabsTrigger value="performance">الأداء</TabsTrigger>
+          <TabsTrigger value="risk">إدارة المخاطر</TabsTrigger>
+          <TabsTrigger value="hft">التداول عالي التردد</TabsTrigger>
+          <TabsTrigger value="backtest">الباك تيست</TabsTrigger>
           <TabsTrigger value="settings">الإعدادات</TabsTrigger>
         </TabsList>
 
@@ -439,50 +445,6 @@ const TradingPlatform = ({ lang = 'ar' }: TradingPlatformProps) => {
         <TabsContent value="portfolio" className="space-y-6">
           {portfolio && (
             <>
-              {/* المراكز النشطة */}
-              <Card className="bg-trading-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white">المراكز النشطة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {portfolio.positions.map((position, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Badge 
-                            variant={position.side === 'long' ? 'default' : 'destructive'}
-                            className={position.side === 'long' ? 'bg-trading-up' : 'bg-trading-down'}
-                          >
-                            {position.side.toUpperCase()}
-                          </Badge>
-                          <div>
-                            <div className="font-medium text-white">{position.symbol}</div>
-                            <div className="text-sm text-gray-400">
-                              {position.size.toFixed(6)} @ {position.entryPrice.toFixed(4)}
-                            </div>
-                            <div className="text-xs text-gray-500">{position.exchange}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={cn(
-                            "font-bold",
-                            position.unrealizedPnL >= 0 ? 'text-trading-up' : 'text-trading-down'
-                          )}>
-                            {position.unrealizedPnL >= 0 ? '+' : ''}${position.unrealizedPnL.toFixed(2)}
-                          </div>
-                          <div className={cn(
-                            "text-xs",
-                            position.unrealizedPnL >= 0 ? 'text-trading-up' : 'text-trading-down'
-                          )}>
-                            {position.unrealizedPnL >= 0 ? '+' : ''}{position.unrealizedPnLPercent.toFixed(2)}%
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* رسم الأداء */}
               <Card className="bg-trading-card border-gray-800">
                 <CardHeader>
@@ -521,98 +483,77 @@ const TradingPlatform = ({ lang = 'ar' }: TradingPlatformProps) => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* الأوامر النشطة */}
+              <Card className="bg-trading-card border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-white">الأوامر النشطة والمكتملة</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {orders.length > 0 ? orders.map((order, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Badge 
+                            variant={order.side === 'buy' ? 'default' : 'destructive'}
+                            className={order.side === 'buy' ? 'bg-trading-up' : 'bg-trading-down'}
+                          >
+                            {order.side.toUpperCase()}
+                          </Badge>
+                          <div>
+                            <div className="font-medium text-white">{order.symbol}</div>
+                            <div className="text-sm text-gray-400">
+                              {order.amount} @ {order.price?.toFixed(4)}
+                            </div>
+                            <div className="text-xs text-gray-500">{order.exchange}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              order.status === 'closed' ? 'border-trading-up text-trading-up' :
+                              order.status === 'open' ? 'border-blue-500 text-blue-500' :
+                              order.status === 'canceled' ? 'border-gray-500 text-gray-500' :
+                              'border-yellow-500 text-yellow-500'
+                            )}
+                          >
+                            {order.status}
+                          </Badge>
+                          <div className="text-sm text-gray-400 mt-1">
+                            المملوء: {((order.filled / order.amount) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-8">
+                        <Activity className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-white mb-2">لا توجد أوامر نشطة</h3>
+                        <p className="text-gray-400">
+                          ابدأ التداول الآلي لرؤية الأوامر هنا
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </TabsContent>
 
-        {/* الأوامر */}
-        <TabsContent value="orders" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white">الأوامر النشطة والمكتملة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {orders.length > 0 ? orders.map((order, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant={order.side === 'buy' ? 'default' : 'destructive'}
-                        className={order.side === 'buy' ? 'bg-trading-up' : 'bg-trading-down'}
-                      >
-                        {order.side.toUpperCase()}
-                      </Badge>
-                      <div>
-                        <div className="font-medium text-white">{order.symbol}</div>
-                        <div className="text-sm text-gray-400">
-                          {order.amount} @ {order.price?.toFixed(4)}
-                        </div>
-                        <div className="text-xs text-gray-500">{order.exchange}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge 
-                        variant="outline"
-                        className={cn(
-                          order.status === 'closed' ? 'border-trading-up text-trading-up' :
-                          order.status === 'open' ? 'border-blue-500 text-blue-500' :
-                          order.status === 'canceled' ? 'border-gray-500 text-gray-500' :
-                          'border-yellow-500 text-yellow-500'
-                        )}
-                      >
-                        {order.status}
-                      </Badge>
-                      <div className="text-sm text-gray-400 mt-1">
-                        المملوء: {((order.filled / order.amount) * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-8">
-                    <Activity className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-white mb-2">لا توجد أوامر نشطة</h3>
-                    <p className="text-gray-400">
-                      ابدأ التداول الآلي لرؤية الأوامر هنا
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        {/* إدارة المخاطر */}
+        <TabsContent value="risk" className="space-y-6">
+          <RiskManagement lang={lang} />
         </TabsContent>
 
-        {/* الأداء */}
-        <TabsContent value="performance" className="space-y-6">
-          <Card className="bg-trading-card border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white">أداء الاستراتيجيات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={strategyPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis 
-                      dataKey="name" 
-                      stroke="#9CA3AF"
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: '1px solid #374151',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar dataKey="winRate" fill="#22C55E" name="معدل الفوز %" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+        {/* التداول عالي التردد */}
+        <TabsContent value="hft" className="space-y-6">
+          <HighFrequencyTrading lang={lang} />
+        </TabsContent>
+
+        {/* الباك تيست */}
+        <TabsContent value="backtest" className="space-y-6">
+          <BacktestingDashboard lang={lang} />
         </TabsContent>
 
         {/* الإعدادات */}
