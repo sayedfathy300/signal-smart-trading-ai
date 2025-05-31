@@ -2,7 +2,27 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { AppLayout } from '@/components/AppLayout';
 import Index from '@/pages/Index';
+import Dashboard from '@/pages/Dashboard';
+import Charts from '@/pages/Charts';
+import Analysis from '@/pages/Analysis';
+import Portfolio from '@/pages/Portfolio';
+import TradingBot from '@/pages/TradingBot';
+import TradingPlatform from '@/pages/TradingPlatform';
+import HighFrequencyTrading from '@/pages/HighFrequencyTrading';
+import RiskManagement from '@/pages/RiskManagement';
+import AlternativeData from '@/pages/AlternativeData';
+import AIModels from '@/pages/AIModels';
+import ContinuousLearning from '@/pages/ContinuousLearning';
+import ExplainableAI from '@/pages/ExplainableAI';
+import SecurityDashboard from '@/pages/SecurityDashboard';
+import AdvancedUI from '@/pages/AdvancedUI';
+import InteractiveAnalysis from '@/pages/InteractiveAnalysis';
+import SocialTrading from '@/pages/SocialTrading';
+import BlockchainIntegration from '@/pages/BlockchainIntegration';
 
 console.log('=== APP.TSX LOADING ===');
 
@@ -21,39 +41,46 @@ function App() {
   const [lang, setLang] = useState<'en' | 'ar'>('ar');
 
   return (
-    <div style={{ 
-      backgroundColor: '#0f172a', 
-      color: '#f8fafc', 
-      minHeight: '100vh',
-      width: '100%',
-      padding: '20px'
-    }}>
+    <div className="min-h-screen bg-slate-900 text-white w-full">
       <QueryClientProvider client={queryClient}>
         <Router>
-          <div className="min-h-screen bg-slate-900 text-white">
-            <header style={{ 
-              backgroundColor: 'rgba(30, 41, 59, 0.8)', 
-              padding: '1rem',
-              marginBottom: '2rem',
-              borderRadius: '8px'
-            }}>
-              <h1 className="text-2xl font-bold text-center">
-                منصة التداول الذكي - AI Trading Platform
-              </h1>
-            </header>
-            
-            <main style={{ padding: '1rem' }}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="*" element={
-                  <div className="text-center text-white">
-                    <h2>الصفحة غير موجودة - Page Not Found</h2>
-                    <a href="/" className="text-blue-400 underline">العودة للصفحة الرئيسية</a>
-                  </div>
-                } />
-              </Routes>
-            </main>
-          </div>
+          <SidebarProvider>
+            <div className="min-h-screen flex w-full">
+              <AppSidebar lang={lang} />
+              <div className="flex-1">
+                <AppLayout lang={lang} setLang={setLang}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/charts" element={<Charts />} />
+                    <Route path="/analysis" element={<Analysis />} />
+                    <Route path="/portfolio" element={<Portfolio />} />
+                    <Route path="/trading-bot" element={<TradingBot />} />
+                    <Route path="/trading-platform" element={<TradingPlatform />} />
+                    <Route path="/high-frequency-trading" element={<HighFrequencyTrading />} />
+                    <Route path="/risk-management" element={<RiskManagement />} />
+                    <Route path="/alternative-data" element={<AlternativeData />} />
+                    <Route path="/ai-models" element={<AIModels />} />
+                    <Route path="/continuous-learning" element={<ContinuousLearning />} />
+                    <Route path="/explainable-ai" element={<ExplainableAI />} />
+                    <Route path="/security" element={<SecurityDashboard />} />
+                    <Route path="/advanced-ui" element={<AdvancedUI />} />
+                    <Route path="/interactive-analysis" element={<InteractiveAnalysis />} />
+                    <Route path="/social-trading" element={<SocialTrading />} />
+                    <Route path="/blockchain-integration" element={<BlockchainIntegration />} />
+                    <Route path="*" element={
+                      <div className="text-center text-white p-8">
+                        <h2 className="text-2xl mb-4">الصفحة غير موجودة - Page Not Found</h2>
+                        <a href="/" className="text-blue-400 underline hover:text-blue-300">
+                          العودة للصفحة الرئيسية
+                        </a>
+                      </div>
+                    } />
+                  </Routes>
+                </AppLayout>
+              </div>
+            </div>
+          </SidebarProvider>
         </Router>
       </QueryClientProvider>
     </div>
