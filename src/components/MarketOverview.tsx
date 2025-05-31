@@ -1,435 +1,160 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  RefreshCw, 
-  Wifi,
-  WifiOff,
-  Database,
-  Globe,
-  Activity,
-  DollarSign,
-  BarChart3,
-  Volume2,
-  Clock
-} from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { cn } from '@/lib/utils';
-import { marketDataService, MarketData, YahooFinanceData } from '@/services/marketDataService';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { marketDataService } from '@/services/marketDataService';
+import { Sparkline } from '@/components/Sparkline';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface MarketOverviewProps {
-  lang?: 'en' | 'ar';
+  lang: 'en' | 'ar';
 }
 
-const MarketOverview = ({ lang = 'ar' }: MarketOverviewProps) => {
-  const [marketData, setMarketData] = useState<Record<string, MarketData>>({});
-  const [yahooData, setYahooData] = useState<Record<string, YahooFinanceData>>({});
-  const [loading, setLoading] = useState(false);
-  const [wsStatus, setWsStatus] = useState<Record<string, boolean>>({});
-  const [performanceStats, setPerformanceStats] = useState<any>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+interface MarketData {
+  indices: { name: string; value: number; change: number }[];
+  currencies: { name: string; value: number; change: number }[];
+  commodities: { name: string; value: number; change: number }[];
+  trending: { ticker: string; companyName: string; price: number; change: number; sparklineData: number[] }[];
+}
 
-  const watchedSymbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'BTCUSD', 'ETHUSD'];
+const MarketOverview = ({ lang }: MarketOverviewProps) => {
+  console.log('MarketOverview rendering with lang:', lang);
+  
+  const { data: marketData, isLoading, error } = useQuery({
+    queryKey: ['marketData'],
+    queryFn: async () => {
+      try {
+        const data = await marketDataService.getMarketOverview();
+        console.log('Market data fetched:', data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching market data:', error);
+        throw error;
+      }
+    },
+    retry: 2,
+  });
 
-  useEffect(() => {
-    loadInitialData();
-    setupRealtimeConnections();
-    loadPerformanceStats();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+          <p className="text-gray-300">
+            {lang === 'ar' ? 'جاري تحميل بيانات السوق...' : 'Loading market data...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-    // تحديث الإحصائيات كل 30 ثانية
-    const statsInterval = setInterval(loadPerformanceStats, 30000);
+  if (error) {
+    console.error('MarketOverview error:', error);
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-red-400">
+            {lang === 'ar' ? 'خطأ في تحميل البيانات' : 'Error Loading Data'}
+          </h2>
+          <p className="text-gray-300">
+            {lang === 'ar' ? 'لا يمكن تحميل بيانات السوق حالياً' : 'Cannot load market data currently'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+          >
+            {lang === 'ar' ? 'إعادة المحاولة' : 'Try Again'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-    return () => {
-      clearInterval(statsInterval);
-      cleanupConnections();
-    };
-  }, []);
+  // Safely access data with fallbacks
+  const safeMarketData = marketData || {
+    indices: [],
+    currencies: [],
+    commodities: [],
+    trending: []
+  };
 
-  const loadInitialData = async () => {
-    setLoading(true);
-    try {
-      console.log('📊 تحميل البيانات الأولية للأسواق...');
-
-      const marketPromises = watchedSymbols.map(async (symbol) => {
-        const data = await marketDataService.getMarketData(symbol);
-        return { symbol, data };
-      });
-
-      const yahooPromises = watchedSymbols.slice(0, 5).map(async (symbol) => {
-        const data = await marketDataService.getYahooFinanceData(symbol);
-        return { symbol, data };
-      });
-
-      const [marketResults, yahooResults] = await Promise.all([
-        Promise.all(marketPromises),
-        Promise.all(yahooPromises)
-      ]);
-
-      // تحديث بيانات السوق
-      const newMarketData: Record<string, MarketData> = {};
-      marketResults.forEach(({ symbol, data }) => {
-        newMarketData[symbol] = data;
-      });
-      setMarketData(newMarketData);
-
-      // تحديث بيانات Yahoo Finance
-      const newYahooData: Record<string, YahooFinanceData> = {};
-      yahooResults.forEach(({ symbol, data }) => {
-        if (data) {
-          newYahooData[symbol] = data;
-        }
-      });
-      setYahooData(newYahooData);
-
-      setLastUpdate(new Date());
-      console.log('✅ تم تحميل البيانات الأولية بنجاح');
-
-    } catch (error) {
-      console.error('خطأ في تحميل البيانات الأولية:', error);
-    } finally {
-      setLoading(false);
+  const safeToFixed = (value: any, decimals: number = 2): string => {
+    if (value === null || value === undefined || isNaN(Number(value))) {
+      return '0.00';
     }
+    return Number(value).toFixed(decimals);
   };
-
-  const setupRealtimeConnections = () => {
-    console.log('🔗 إعداد الاتصالات المباشرة...');
-
-    watchedSymbols.forEach(symbol => {
-      // إعداد WebSocket للرموز
-      marketDataService.connectWebSocketStream(symbol, 'binance');
-      
-      // الاشتراك في التحديثات
-      const callback = (data: MarketData) => {
-        setMarketData(prev => ({
-          ...prev,
-          [symbol]: data
-        }));
-        setLastUpdate(new Date());
-        
-        // تحديث حالة الاتصال
-        setWsStatus(prev => ({
-          ...prev,
-          [symbol]: true
-        }));
-      };
-
-      marketDataService.subscribe(symbol, callback);
-
-      // تحديث حالة الاتصال الأولية
-      setWsStatus(prev => ({
-        ...prev,
-        [symbol]: true
-      }));
-    });
-  };
-
-  const cleanupConnections = () => {
-    console.log('🧹 تنظيف الاتصالات...');
-    marketDataService.cleanup();
-  };
-
-  const loadPerformanceStats = () => {
-    const stats = marketDataService.getPerformanceStats();
-    setPerformanceStats(stats);
-  };
-
-  const handleRefresh = async () => {
-    await loadInitialData();
-    loadPerformanceStats();
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(price);
-  };
-
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000000) {
-      return `${(volume / 1000000).toFixed(1)}M`;
-    } else if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K`;
-    }
-    return volume.toString();
-  };
-
-  // بيانات الرسم البياني للأداء
-  const chartData = Object.entries(marketData).slice(0, 5).map(([symbol, data]) => ({
-    symbol,
-    price: data.price,
-    change: data.changePercent
-  }));
 
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* الرأس */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn("text-3xl font-bold text-white", lang === 'ar' && 'rtl text-right')}>
-            {lang === 'ar' ? 'نظرة عامة على السوق' : 'Market Overview'}
-          </h1>
-          <p className="text-gray-400">
-            {lang === 'ar' ? 'بيانات مباشرة من مصادر متعددة مع تخزين محلي' : 'Live data from multiple sources with local storage'}
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-500">
-              آخر تحديث: {lastUpdate.toLocaleTimeString('ar-SA')}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {/* حالة الاتصال */}
-          <div className="flex items-center gap-2">
-            {Object.values(wsStatus).some(Boolean) ? (
-              <Wifi className="h-5 w-5 text-green-400" />
-            ) : (
-              <WifiOff className="h-5 w-5 text-red-400" />
-            )}
-            <span className="text-sm text-gray-400">
-              {Object.values(wsStatus).filter(Boolean).length}/{watchedSymbols.length} متصل
-            </span>
-          </div>
+    <div className="container mx-auto p-4 text-white">
+      <h1 className="text-2xl font-bold mb-4">{lang === 'ar' ? 'نظرة عامة على السوق' : 'Market Overview'}</h1>
 
-          <Button
-            onClick={handleRefresh}
-            disabled={loading}
-            size="sm"
-            className="bg-trading-primary hover:bg-blue-600"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            تحديث
-          </Button>
+      {/* Indices */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'المؤشرات' : 'Indices'}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {safeMarketData.indices.map((index) => (
+            <div key={index.name} className="bg-trading-card p-4 rounded-lg shadow">
+              <h3 className="font-semibold">{index.name}</h3>
+              <p>{safeToFixed(index.value)}</p>
+              <p className={index.change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {index.change >= 0 ? <ArrowUp className="inline-block mr-1" size={16} /> : <ArrowDown className="inline-block mr-1" size={16} />}
+                {safeToFixed(index.change)}%
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* إحصائيات الأداء */}
-      {performanceStats && (
-        <Card className="bg-trading-card border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Activity className="h-5 w-5 text-blue-400" />
-              إحصائيات الأداء
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-trading-secondary rounded-lg">
-                <Database className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">{performanceStats.cacheSize}</div>
-                <div className="text-xs text-gray-400">عناصر مؤقتة</div>
-              </div>
-              <div className="text-center p-3 bg-trading-secondary rounded-lg">
-                <Wifi className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">{performanceStats.activeConnections}</div>
-                <div className="text-xs text-gray-400">اتصالات نشطة</div>
-              </div>
-              <div className="text-center p-3 bg-trading-secondary rounded-lg">
-                <Globe className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">{performanceStats.totalSubscribers}</div>
-                <div className="text-xs text-gray-400">مشتركين</div>
-              </div>
-              <div className="text-center p-3 bg-trading-secondary rounded-lg">
-                <Database className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">
-                  {performanceStats.dbStatus === 'connected' ? 'متصل' : 'غير متصل'}
-                </div>
-                <div className="text-xs text-gray-400">قاعدة البيانات</div>
-              </div>
+      {/* Currencies */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'العملات' : 'Currencies'}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {safeMarketData.currencies.map((currency) => (
+            <div key={currency.name} className="bg-trading-card p-4 rounded-lg shadow">
+              <h3 className="font-semibold">{currency.name}</h3>
+              <p>{safeToFixed(currency.value)}</p>
+              <p className={currency.change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {currency.change >= 0 ? <ArrowUp className="inline-block mr-1" size={16} /> : <ArrowDown className="inline-block mr-1" size={16} />}
+                {safeToFixed(currency.change)}%
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* الرسم البياني */}
-      <Card className="bg-trading-card border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white">أداء الأسهم الرئيسية</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="symbol" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1F2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#22C55E" 
-                  strokeWidth={2}
-                  name="السعر"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* بيانات السوق المباشرة */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* البيانات العادية */}
-        <Card className="bg-trading-card border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-400" />
-              البيانات المباشرة (WebSocket)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(marketData).map(([symbol, data]) => (
-                <div key={symbol} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-3 h-3 rounded-full animate-pulse",
-                      wsStatus[symbol] ? 'bg-green-400' : 'bg-red-400'
-                    )} />
-                    <div>
-                      <div className="font-medium text-white">{symbol}</div>
-                      <div className="text-xs text-gray-400">
-                        {formatVolume(data.volume)} حجم
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-white">
-                      {formatPrice(data.price)}
-                    </div>
-                    <div className={cn(
-                      "text-sm flex items-center gap-1",
-                      data.changePercent >= 0 ? 'text-green-400' : 'text-red-400'
-                    )}>
-                      {data.changePercent >= 0 ? 
-                        <TrendingUp className="h-3 w-3" /> : 
-                        <TrendingDown className="h-3 w-3" />
-                      }
-                      {data.changePercent.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* بيانات Yahoo Finance */}
-        <Card className="bg-trading-card border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Globe className="h-5 w-5 text-purple-400" />
-              بيانات Yahoo Finance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(yahooData).map(([symbol, data]) => (
-                <div key={symbol} className="p-3 bg-trading-secondary rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-white">{symbol}</div>
-                    <Badge variant="outline" className="border-purple-500 text-purple-400">
-                      Yahoo Finance
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <div className="text-gray-400">السعر</div>
-                      <div className="font-bold text-white">
-                        {formatPrice(data.regularMarketPrice)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-400">التغيير</div>
-                      <div className={cn(
-                        "font-bold",
-                        data.regularMarketChangePercent >= 0 ? 'text-green-400' : 'text-red-400'
-                      )}>
-                        {data.regularMarketChangePercent.toFixed(2)}%
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-400">القيمة السوقية</div>
-                      <div className="text-white">
-                        {formatVolume(data.marketCap)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-gray-400">نسبة P/E</div>
-                      <div className="text-white">
-                        {data.peRatio.toFixed(1)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </div>
 
-      {/* تفاصيل المصادر */}
-      <Card className="bg-trading-card border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white">مصادر البيانات النشطة</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-blue-900/30 border border-blue-700 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Wifi className="h-5 w-5 text-blue-400" />
-                <span className="font-bold text-blue-300">WebSocket Streams</span>
-              </div>
-              <ul className="space-y-1 text-blue-200 text-sm">
-                <li>• Binance WebSocket API</li>
-                <li>• Coinbase Pro WebSocket</li>
-                <li>• تحديثات مباشرة كل ثانية</li>
-                <li>• إعادة اتصال تلقائي</li>
-              </ul>
+      {/* Commodities */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'السلع' : 'Commodities'}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {safeMarketData.commodities.map((commodity) => (
+            <div key={commodity.name} className="bg-trading-card p-4 rounded-lg shadow">
+              <h3 className="font-semibold">{commodity.name}</h3>
+              <p>{safeToFixed(commodity.value)}</p>
+              <p className={commodity.change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {commodity.change >= 0 ? <ArrowUp className="inline-block mr-1" size={16} /> : <ArrowDown className="inline-block mr-1" size={16} />}
+                {safeToFixed(commodity.change)}%
+              </p>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="p-4 bg-purple-900/30 border border-purple-700 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Globe className="h-5 w-5 text-purple-400" />
-                <span className="font-bold text-purple-300">Yahoo Finance API</span>
-              </div>
-              <ul className="space-y-1 text-purple-200 text-sm">
-                <li>• بيانات الأسهم الأمريكية</li>
-                <li>• القيمة السوقية والنسب المالية</li>
-                <li>• البيانات التاريخية</li>
-                <li>• تحديث كل 15 ثانية</li>
-              </ul>
+      {/* Trending Stocks */}
+      <div>
+        <h2 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'الأسهم الرائجة' : 'Trending Stocks'}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {safeMarketData.trending.map((stock) => (
+            <div key={stock.ticker} className="bg-trading-card p-4 rounded-lg shadow">
+              <h3 className="font-semibold">{stock.companyName} ({stock.ticker})</h3>
+              <p>{safeToFixed(stock.price)}</p>
+              <p className={stock.change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {stock.change >= 0 ? <ArrowUp className="inline-block mr-1" size={16} /> : <ArrowDown className="inline-block mr-1" size={16} />}
+                {safeToFixed(stock.change)}%
+              </p>
+              <Sparkline data={stock.sparklineData} />
             </div>
-
-            <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="h-5 w-5 text-green-400" />
-                <span className="font-bold text-green-300">IndexedDB Storage</span>
-              </div>
-              <ul className="space-y-1 text-green-200 text-sm">
-                <li>• تخزين محلي للبيانات</li>
-                <li>• سرعة في الوصول</li>
-                <li>• عمل بدون اتصال</li>
-                <li>• انتهاء صلاحية ذكي</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
