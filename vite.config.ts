@@ -19,12 +19,29 @@ export default defineConfig({
       external: [
         'socks-proxy-agent',
         'https-proxy-agent',
+        'http-proxy-agent',
         'ws',
-        'node-fetch'
+        'node-fetch',
+        'node:http',
+        'node:https',
+        'node:fs',
+        'node:path',
+        'node:crypto',
+        'node:url',
+        'node:util',
+        'node:stream',
+        'node:buffer',
+        'node:events',
+        'node:process',
+        'node:os',
+        'node:zlib'
       ]
     }
   },
   define: {
     global: 'globalThis',
   },
+  optimizeDeps: {
+    exclude: ['ccxt']
+  }
 });
