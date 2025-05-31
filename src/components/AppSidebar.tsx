@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -37,7 +36,9 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ lang }: AppSidebarProps) {
+  console.log('=== AppSidebar rendering with lang:', lang);
   const location = useLocation();
+  console.log('Current location:', location.pathname);
   
   const menuItems = [
     {
@@ -127,10 +128,12 @@ export function AppSidebar({ lang }: AppSidebarProps) {
     }
   ];
 
+  console.log('Menu items prepared:', menuItems.length);
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-gray-800 p-4">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link to="/" className="flex items-center space-x-2" onClick={() => console.log('Header logo clicked')}>
           <Brain className="h-8 w-8 text-blue-400" />
           <span className="text-xl font-bold text-white">
             {lang === 'ar' ? 'منصة التداول الذكي' : 'AI Trading Platform'}
@@ -152,7 +155,11 @@ export function AppSidebar({ lang }: AppSidebarProps) {
                     isActive={location.pathname === item.url}
                     className="text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
                   >
-                    <Link to={item.url} className="flex items-center gap-3 px-4 py-3">
+                    <Link 
+                      to={item.url} 
+                      className="flex items-center gap-3 px-4 py-3"
+                      onClick={() => console.log('Navigation clicked:', item.url, item.title)}
+                    >
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>
                     </Link>

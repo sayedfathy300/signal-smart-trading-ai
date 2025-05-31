@@ -9,22 +9,6 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Index from '@/pages/Index';
 import Dashboard from '@/pages/Dashboard';
-import Charts from '@/pages/Charts';
-import Analysis from '@/pages/Analysis';
-import Portfolio from '@/pages/Portfolio';
-import TradingBot from '@/pages/TradingBot';
-import TradingPlatform from '@/pages/TradingPlatform';
-import HighFrequencyTrading from '@/pages/HighFrequencyTrading';
-import RiskManagement from '@/pages/RiskManagement';
-import AlternativeData from '@/pages/AlternativeData';
-import AIModels from '@/pages/AIModels';
-import ContinuousLearning from '@/pages/ContinuousLearning';
-import ExplainableAI from '@/pages/ExplainableAI';
-import SecurityDashboard from '@/pages/SecurityDashboard';
-import AdvancedUI from '@/pages/AdvancedUI';
-import InteractiveAnalysis from '@/pages/InteractiveAnalysis';
-import SocialTrading from '@/pages/SocialTrading';
-import BlockchainIntegration from '@/pages/BlockchainIntegration';
 
 console.log('=== APP.TSX LOADING ===');
 
@@ -37,8 +21,22 @@ const queryClient = new QueryClient({
   },
 });
 
+// Create a safe fallback component
+const SafeFallback = ({ pageName }: { pageName: string }) => {
+  console.log(`Rendering SafeFallback for: ${pageName}`);
+  return (
+    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-8">
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-bold text-yellow-400">صفحة قيد التطوير</h2>
+        <p className="text-gray-300">صفحة {pageName} قيد التطوير حالياً</p>
+        <p className="text-gray-400">Page {pageName} is under development</p>
+      </div>
+    </div>
+  );
+};
+
 function App() {
-  console.log('App component rendering...');
+  console.log('=== App component rendering... ===');
   
   const [lang, setLang] = useState<'en' | 'ar'>('ar');
 
@@ -62,90 +60,92 @@ function App() {
                         } />
                         <Route path="/charts" element={
                           <ErrorBoundary>
-                            <Charts />
+                            <SafeFallback pageName="Charts / الرسوم البيانية" />
                           </ErrorBoundary>
                         } />
                         <Route path="/analysis" element={
                           <ErrorBoundary>
-                            <Analysis />
+                            <SafeFallback pageName="Analysis / التحليل" />
                           </ErrorBoundary>
                         } />
                         <Route path="/portfolio" element={
                           <ErrorBoundary>
-                            <Portfolio />
+                            <SafeFallback pageName="Portfolio / المحفظة" />
                           </ErrorBoundary>
                         } />
                         <Route path="/trading-bot" element={
                           <ErrorBoundary>
-                            <TradingBot />
+                            <SafeFallback pageName="Trading Bot / روبوت التداول" />
                           </ErrorBoundary>
                         } />
                         <Route path="/trading-platform" element={
                           <ErrorBoundary>
-                            <TradingPlatform />
+                            <SafeFallback pageName="Trading Platform / منصة التداول" />
                           </ErrorBoundary>
                         } />
                         <Route path="/high-frequency-trading" element={
                           <ErrorBoundary>
-                            <HighFrequencyTrading />
+                            <SafeFallback pageName="High Frequency Trading / التداول عالي التردد" />
                           </ErrorBoundary>
                         } />
                         <Route path="/risk-management" element={
                           <ErrorBoundary>
-                            <RiskManagement />
+                            <SafeFallback pageName="Risk Management / إدارة المخاطر" />
                           </ErrorBoundary>
                         } />
                         <Route path="/alternative-data" element={
                           <ErrorBoundary>
-                            <AlternativeData />
+                            <SafeFallback pageName="Alternative Data / البيانات البديلة" />
                           </ErrorBoundary>
                         } />
                         <Route path="/ai-models" element={
                           <ErrorBoundary>
-                            <AIModels />
+                            <SafeFallback pageName="AI Models / نماذج الذكاء الاصطناعي" />
                           </ErrorBoundary>
                         } />
                         <Route path="/continuous-learning" element={
                           <ErrorBoundary>
-                            <ContinuousLearning />
+                            <SafeFallback pageName="Continuous Learning / التعلم المستمر" />
                           </ErrorBoundary>
                         } />
                         <Route path="/explainable-ai" element={
                           <ErrorBoundary>
-                            <ExplainableAI />
+                            <SafeFallback pageName="Explainable AI / الذكاء الاصطناعي القابل للتفسير" />
                           </ErrorBoundary>
                         } />
                         <Route path="/security" element={
                           <ErrorBoundary>
-                            <SecurityDashboard />
+                            <SafeFallback pageName="Security / الأمان" />
                           </ErrorBoundary>
                         } />
                         <Route path="/advanced-ui" element={
                           <ErrorBoundary>
-                            <AdvancedUI />
+                            <SafeFallback pageName="Advanced UI / الواجهة المتقدمة" />
                           </ErrorBoundary>
                         } />
                         <Route path="/interactive-analysis" element={
                           <ErrorBoundary>
-                            <InteractiveAnalysis />
+                            <SafeFallback pageName="Interactive Analysis / التحليل التفاعلي" />
                           </ErrorBoundary>
                         } />
                         <Route path="/social-trading" element={
                           <ErrorBoundary>
-                            <SocialTrading />
+                            <SafeFallback pageName="Social Trading / التداول الاجتماعي" />
                           </ErrorBoundary>
                         } />
                         <Route path="/blockchain-integration" element={
                           <ErrorBoundary>
-                            <BlockchainIntegration />
+                            <SafeFallback pageName="Blockchain Integration / تكامل البلوك تشين" />
                           </ErrorBoundary>
                         } />
                         <Route path="*" element={
-                          <div className="text-center text-white p-8">
-                            <h2 className="text-2xl mb-4">الصفحة غير موجودة - Page Not Found</h2>
-                            <a href="/" className="text-blue-400 underline hover:text-blue-300">
-                              العودة للصفحة الرئيسية
-                            </a>
+                          <div className="text-center text-white p-8 bg-slate-900 min-h-screen flex items-center justify-center">
+                            <div>
+                              <h2 className="text-2xl mb-4">الصفحة غير موجودة - Page Not Found</h2>
+                              <a href="/" className="text-blue-400 underline hover:text-blue-300">
+                                العودة للصفحة الرئيسية
+                              </a>
+                            </div>
                           </div>
                         } />
                       </Routes>
