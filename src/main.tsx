@@ -11,6 +11,10 @@ if (!container) {
   throw new Error("Root element not found");
 }
 
+// Set body background immediately
+document.body.style.backgroundColor = '#0f172a';
+document.body.style.color = '#f8fafc';
+
 console.log('Creating React root...');
 const root = createRoot(container);
 
