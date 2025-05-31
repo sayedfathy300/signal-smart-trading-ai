@@ -32,13 +32,17 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<BacktestConfiguration>({
     strategyId: 'scalping_ai_pro',
-    startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
-    endDate: new Date(),
+    strategy: 'scalping_ai_pro',
+    startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
     initialCapital: 10000,
     commission: 0.001,
     slippage: 0.0005,
+    symbol: 'BTC/USDT',
     symbols: ['BTC/USDT', 'ETH/USDT'],
     timeframe: '15m',
+    riskPerTrade: 0.02,
+    maxDrawdown: 0.15,
     riskManagement: {
       maxDrawdown: 0.15,
       maxDailyLoss: 0.05,
@@ -49,8 +53,8 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
   const strategies = [
     { id: 'scalping_ai_pro', name: 'AI Scalping Pro' },
     { id: 'trend_following_adaptive', name: 'Adaptive Trend Following' },
-    { id: 'mean_reversion_ml', name: 'ML Mean Reversion' },
-    { id: 'arbitrage_ai_hunter', name: 'AI Arbitrage Hunter' }
+    { id: 'sma_crossover', name: 'SMA Crossover' },
+    { id: 'rsi_oversold', name: 'RSI Strategy' }
   ];
 
   const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'];
@@ -64,39 +68,82 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
     const sampleResults: BacktestResult[] = [
       {
         strategyId: 'scalping_ai_pro',
-        startDate: config.startDate.getTime(),
-        endDate: config.endDate.getTime(),
-        totalReturn: 15.67,
+        strategy: 'AI Scalping Pro',
+        startDate: config.startDate,
+        endDate: config.endDate,
+        totalReturn: 1567,
+        totalReturnPercent: 15.67,
         annualizedReturn: 68.4,
         maxDrawdown: 8.3,
         sharpeRatio: 2.1,
+        sortinoRatio: 2.5,
         winRate: 0.72,
-        totalTrades: 1567,
         profitFactor: 2.15,
+        totalTrades: 1567,
+        winningTrades: 1128,
+        losingTrades: 439,
+        avgWin: 12.5,
+        avgLoss: 8.2,
+        largestWin: 156.7,
+        largestLoss: -89.3,
+        avgTradeDuration: 45.2,
+        volatility: 18.5,
+        calmarRatio: 1.88,
         trades: [],
         equity: [],
-        monthlyReturns: []
+        equityCurve: [],
+        monthlyReturns: [],
+        performanceMetrics: {
+          totalDays: 90,
+          tradingDays: 252,
+          bestDay: 5.2,
+          worstDay: -3.1,
+          consecutiveWins: 12,
+          consecutiveLosses: 5
+        }
       },
       {
         strategyId: 'trend_following_adaptive',
-        startDate: config.startDate.getTime(),
-        endDate: config.endDate.getTime(),
-        totalReturn: 23.45,
+        strategy: 'Adaptive Trend Following',
+        startDate: config.startDate,
+        endDate: config.endDate,
+        totalReturn: 2345,
+        totalReturnPercent: 23.45,
         annualizedReturn: 98.7,
         maxDrawdown: 12.1,
         sharpeRatio: 1.8,
+        sortinoRatio: 2.2,
         winRate: 0.68,
-        totalTrades: 234,
         profitFactor: 2.45,
+        totalTrades: 234,
+        winningTrades: 159,
+        losingTrades: 75,
+        avgWin: 28.7,
+        avgLoss: 15.3,
+        largestWin: 287.5,
+        largestLoss: -145.2,
+        avgTradeDuration: 120.5,
+        volatility: 22.3,
+        calmarRatio: 1.94,
         trades: [],
         equity: [],
-        monthlyReturns: []
+        equityCurve: [],
+        monthlyReturns: [],
+        performanceMetrics: {
+          totalDays: 90,
+          tradingDays: 252,
+          bestDay: 8.1,
+          worstDay: -4.7,
+          consecutiveWins: 8,
+          consecutiveLosses: 3
+        }
       }
     ];
     
     setBacktestResults(sampleResults);
     if (sampleResults.length > 0) {
       setSelectedResult(sampleResults[0]);
+      loadDetailedMetrics(sampleResults[0]);
     }
   };
 
@@ -106,7 +153,7 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
       console.log('🔄 بدء الباك تيست...', config);
       
       const result = await backtestingService.runBacktest(config);
-      const metrics = await backtestingService.getDetailedMetrics(result);
+      const metrics = backtestingService.getDetailedMetrics(result);
       
       setBacktestResults(prev => [result, ...prev]);
       setSelectedResult(result);
@@ -122,7 +169,7 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
 
   const loadDetailedMetrics = async (result: BacktestResult) => {
     try {
-      const metrics = await backtestingService.getDetailedMetrics(result);
+      const metrics = backtestingService.getDetailedMetrics(result);
       setDetailedMetrics(metrics);
     } catch (error) {
       console.error('خطأ في تحميل المؤشرات المفصلة:', error);
@@ -135,17 +182,25 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
   };
 
   // بيانات الأسهم المحاكاة
-  const equityData = selectedResult ? Array.from({ length: 90 }, (_, i) => ({
-    date: new Date(selectedResult.startDate + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
-    equity: 10000 * (1 + (selectedResult.totalReturn / 100) * (i / 90) + (Math.random() - 0.5) * 0.02),
-    drawdown: Math.random() * selectedResult.maxDrawdown
-  })) : [];
+  const equityData = selectedResult ? Array.from({ length: 90 }, (_, i) => {
+    const startTime = new Date(selectedResult.startDate).getTime();
+    return {
+      date: new Date(startTime + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      equity: 10000 * (1 + (selectedResult.totalReturnPercent / 100) * (i / 90) + (Math.random() - 0.5) * 0.02),
+      drawdown: Math.random() * selectedResult.maxDrawdown
+    };
+  }) : [];
 
-  const monthlyData = selectedResult?.monthlyReturns.map(mr => ({
+  const monthlyData = selectedResult?.monthlyReturns?.map(mr => ({
     month: mr.month,
     return: mr.return,
-    trades: mr.trades
-  })) || [];
+    trades: mr.trades || 0
+  })) || Array.from({ length: 12 }, (_, i) => ({
+    month: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+           'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'][i],
+    return: (Math.random() - 0.4) * 20,
+    trades: Math.floor(Math.random() * 50) + 10
+  }));
 
   return (
     <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
@@ -186,7 +241,7 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
               <label className="text-sm text-gray-400 mb-2 block">الاستراتيجية</label>
               <select
                 value={config.strategyId}
-                onChange={(e) => setConfig(prev => ({ ...prev, strategyId: e.target.value }))}
+                onChange={(e) => setConfig(prev => ({ ...prev, strategyId: e.target.value, strategy: e.target.value }))}
                 className="w-full p-2 bg-trading-secondary border border-gray-600 rounded text-white"
               >
                 {strategies.map(strategy => (
@@ -294,13 +349,13 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-white">
-                          {strategies.find(s => s.id === result.strategyId)?.name}
+                          {strategies.find(s => s.id === result.strategyId)?.name || result.strategy}
                         </span>
                         <Badge 
-                          variant={result.totalReturn > 0 ? 'default' : 'destructive'}
-                          className={result.totalReturn > 0 ? 'bg-trading-up' : 'bg-trading-down'}
+                          variant={result.totalReturnPercent > 0 ? 'default' : 'destructive'}
+                          className={result.totalReturnPercent > 0 ? 'bg-trading-up' : 'bg-trading-down'}
                         >
-                          {result.totalReturn > 0 ? '+' : ''}{result.totalReturn.toFixed(2)}%
+                          {result.totalReturnPercent > 0 ? '+' : ''}{result.totalReturnPercent.toFixed(2)}%
                         </Badge>
                       </div>
                       
@@ -328,9 +383,9 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
                       </div>
                       <div className={cn(
                         "text-xl font-bold",
-                        selectedResult.totalReturn >= 0 ? 'text-trading-up' : 'text-trading-down'
+                        selectedResult.totalReturnPercent >= 0 ? 'text-trading-up' : 'text-trading-down'
                       )}>
-                        {selectedResult.totalReturn >= 0 ? '+' : ''}{selectedResult.totalReturn.toFixed(2)}%
+                        {selectedResult.totalReturnPercent >= 0 ? '+' : ''}{selectedResult.totalReturnPercent.toFixed(2)}%
                       </div>
                     </CardContent>
                   </Card>
@@ -495,11 +550,11 @@ const BacktestingDashboard = ({ lang = 'ar' }: BacktestingDashboardProps) => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">VaR 95%:</span>
-                          <span className="text-white">{(detailedMetrics.var95 * 100).toFixed(2)}%</span>
+                          <span className="text-white">{(detailedMetrics.var95).toFixed(2)}%</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Expected Shortfall:</span>
-                          <span className="text-white">{(detailedMetrics.expectedShortfall * 100).toFixed(2)}%</span>
+                          <span className="text-white">{(detailedMetrics.expectedShortfall).toFixed(2)}%</span>
                         </div>
                       </div>
                     </div>

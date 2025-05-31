@@ -1,3 +1,4 @@
+
 export interface BacktestParameters {
   strategy: string;
   startDate: string;
@@ -10,8 +11,10 @@ export interface BacktestParameters {
 }
 
 export interface BacktestConfiguration {
+  strategyId: string;
   strategy: string;
   symbol: string;
+  symbols: string[];
   timeframe: string;
   startDate: string;
   endDate: string;
@@ -20,6 +23,11 @@ export interface BacktestConfiguration {
   slippage: number;
   riskPerTrade: number;
   maxDrawdown: number;
+  riskManagement: {
+    maxDrawdown: number;
+    maxDailyLoss: number;
+    positionSizing: string;
+  };
 }
 
 export interface BacktestTrade {
@@ -38,17 +46,10 @@ export interface BacktestTrade {
 }
 
 export interface BacktestResult {
-  totalReturn: number;
-  totalReturnPercent: number;
-  annualizedReturn: number;
-  maxDrawdown: number;
-  sharpeRatio: number;
-  winRate: number;
-  totalTrades: number;
-  trades: BacktestTrade[];
-}
-
-export interface BacktestResultData {
+  strategyId: string;
+  strategy?: string;
+  startDate: string;
+  endDate: string;
   totalReturn: number;
   totalReturnPercent: number;
   annualizedReturn: number;
@@ -73,9 +74,15 @@ export interface BacktestResultData {
     equity: number;
     drawdown: number;
   }>;
+  equity: Array<{
+    timestamp: number;
+    equity: number;
+    drawdown: number;
+  }>;
   monthlyReturns: Array<{
     month: string;
     return: number;
+    trades?: number;
   }>;
   performanceMetrics: {
     totalDays: number;
@@ -88,6 +95,18 @@ export interface BacktestResultData {
 }
 
 export interface BacktestMetrics {
+  volatility: number;
+  sortinoRatio: number;
+  calmarRatio: number;
+  profitFactor: number;
+  averageWin: number;
+  averageLoss: number;
+  largestWin: number;
+  largestLoss: number;
+  consecutiveWins: number;
+  consecutiveLosses: number;
+  var95: number;
+  expectedShortfall: number;
   returnMetrics: {
     totalReturn: number;
     annualizedReturn: number;
@@ -150,10 +169,31 @@ class BacktestingService {
         deviation: 2
       }
     });
+
+    this.strategies.set('scalping_ai_pro', {
+      name: 'AI Scalping Pro',
+      description: 'استراتيجية السكالبينج المدعومة بالذكاء الاصطناعي',
+      parameters: {
+        rsiPeriod: 14,
+        stochPeriod: 14,
+        profitTarget: 0.5,
+        stopLoss: 0.3
+      }
+    });
+
+    this.strategies.set('trend_following_adaptive', {
+      name: 'Adaptive Trend Following',
+      description: 'استراتيجية متابعة الاتجاه التكيفية',
+      parameters: {
+        emaPeriod: 21,
+        adxPeriod: 14,
+        adxThreshold: 25
+      }
+    });
   }
 
-  async runBacktest(params: BacktestParameters): Promise<BacktestResultData> {
-    console.log(`🔄 بدء تشغيل الباك تيست للاستراتيجية: ${params.strategy}`);
+  async runBacktest(params: BacktestParameters | BacktestConfiguration): Promise<BacktestResult> {
+    console.log(`🔄 بدء تشغيل الباك تيست للاستراتيجية: ${params.strategy || (params as any).strategyId}`);
 
     // محاكاة تشغيل الباك تيست
     await this.simulateBacktestExecution();
@@ -162,8 +202,20 @@ class BacktestingService {
     return this.generateBacktestResults(params);
   }
 
-  getDetailedMetrics(result: BacktestResultData): BacktestMetrics {
+  getDetailedMetrics(result: BacktestResult): BacktestMetrics {
     return {
+      volatility: result.volatility,
+      sortinoRatio: result.sortinoRatio,
+      calmarRatio: result.calmarRatio,
+      profitFactor: result.profitFactor,
+      averageWin: result.avgWin,
+      averageLoss: Math.abs(result.avgLoss),
+      largestWin: result.largestWin,
+      largestLoss: Math.abs(result.largestLoss),
+      consecutiveWins: result.performanceMetrics.consecutiveWins,
+      consecutiveLosses: result.performanceMetrics.consecutiveLosses,
+      var95: this.calculateVaR(result.trades),
+      expectedShortfall: this.calculateES(result.trades),
       returnMetrics: {
         totalReturn: result.totalReturn,
         annualizedReturn: result.annualizedReturn,
@@ -211,14 +263,15 @@ class BacktestingService {
     });
   }
 
-  private generateBacktestResults(params: BacktestParameters): BacktestResultData {
+  private generateBacktestResults(params: BacktestParameters | BacktestConfiguration): BacktestResult {
     const trades = this.generateMockTrades(params);
-    const equityCurve = this.generateEquityCurve(params.initialCapital, trades);
+    const initialCapital = params.initialCapital;
+    const equityCurve = this.generateEquityCurve(initialCapital, trades);
     const monthlyReturns = this.generateMonthlyReturns();
 
     // حساب المؤشرات
     const totalPnL = trades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const totalReturnPercent = (totalPnL / params.initialCapital) * 100;
+    const totalReturnPercent = (totalPnL / initialCapital) * 100;
     const winningTrades = trades.filter(t => t.pnl > 0);
     const losingTrades = trades.filter(t => t.pnl < 0);
     
@@ -240,7 +293,14 @@ class BacktestingService {
     const returnStd = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length);
     const sharpeRatio = avgReturn / returnStd * Math.sqrt(252); // سنوي
 
+    const strategyId = (params as any).strategyId || params.strategy;
+    const strategy = this.strategies.get(strategyId);
+
     return {
+      strategyId,
+      strategy: strategy?.name || strategyId,
+      startDate: params.startDate,
+      endDate: params.endDate,
       totalReturn: totalPnL,
       totalReturnPercent,
       annualizedReturn: totalReturnPercent * (365 / this.getDaysBetween(params.startDate, params.endDate)),
@@ -261,6 +321,7 @@ class BacktestingService {
       calmarRatio: totalReturnPercent / Math.abs(maxDrawdown),
       trades,
       equityCurve,
+      equity: equityCurve,
       monthlyReturns,
       performanceMetrics: {
         totalDays: this.getDaysBetween(params.startDate, params.endDate),
@@ -273,12 +334,14 @@ class BacktestingService {
     };
   }
 
-  private generateMockTrades(params: BacktestParameters): BacktestTrade[] {
+  private generateMockTrades(params: BacktestParameters | BacktestConfiguration): BacktestTrade[] {
     const trades: BacktestTrade[] = [];
     const startTime = new Date(params.startDate).getTime();
     const endTime = new Date(params.endDate).getTime();
     const totalDays = (endTime - startTime) / (1000 * 60 * 60 * 24);
     const numTrades = Math.floor(totalDays / 7); // تداول أسبوعي تقريباً
+
+    const symbol = (params as any).symbol || (params as any).symbols?.[0] || 'BTC/USDT';
 
     for (let i = 0; i < numTrades; i++) {
       const entryTime = startTime + (i * 7 * 24 * 60 * 60 * 1000);
@@ -294,7 +357,7 @@ class BacktestingService {
 
       trades.push({
         id: `trade_${i}`,
-        symbol: params.symbol,
+        symbol,
         side: Math.random() > 0.5 ? 'buy' : 'sell',
         quantity,
         entryPrice,
@@ -339,13 +402,14 @@ class BacktestingService {
     return curve;
   }
 
-  private generateMonthlyReturns(): Array<{month: string; return: number}> {
+  private generateMonthlyReturns(): Array<{month: string; return: number; trades: number}> {
     const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
                    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
     return months.map(month => ({
       month,
-      return: (Math.random() - 0.4) * 20 // عوائد شهرية متنوعة
+      return: (Math.random() - 0.4) * 20, // عوائد شهرية متنوعة
+      trades: Math.floor(Math.random() * 50) + 10
     }));
   }
 
