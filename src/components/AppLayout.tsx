@@ -28,7 +28,7 @@ export function AppLayout({ lang, setLang, children }: AppLayoutProps) {
       </header>
       
       <main className="flex-1 p-6 bg-slate-900">
-        {children || <Outlet />}
+        {children || <Outlet context={{ lang }} />}
       </main>
     </div>
   );

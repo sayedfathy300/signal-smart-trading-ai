@@ -8,7 +8,13 @@ interface OutletContext {
 }
 
 const Dashboard = () => {
-  const { lang } = useOutletContext<OutletContext>();
+  console.log('Dashboard component rendering...');
+  
+  // استخدم fallback إذا لم يكن السياق متوفراً
+  const context = useOutletContext<OutletContext>();
+  const lang = context?.lang || 'ar';
+  
+  console.log('Dashboard context:', context, 'lang:', lang);
   
   return <MarketOverview lang={lang} />;
 };
