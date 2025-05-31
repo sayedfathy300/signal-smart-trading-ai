@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { backtestingService, BacktestResult, BacktestConfiguration } from '@/services/backtestingService';
+import { mockBacktestingService, MockBacktestResult, MockBacktestConfiguration } from '@/services/mockBacktestingService';
 import StrategyBacktesting from '@/components/interactive-analysis/StrategyBacktesting';
 
 interface IntegrationTest {
@@ -111,7 +110,7 @@ const BacktestingIntegration = ({ lang = 'ar' }: BacktestingIntegrationProps) =>
     try {
       // Test 1: Service Initialization
       await runTest(updatedTests, 0, async () => {
-        const strategies = backtestingService.getAvailableStrategies();
+        const strategies = mockBacktestingService.getAvailableStrategies();
         if (!strategies || strategies.length === 0) {
           throw new Error('No strategies found');
         }
@@ -120,7 +119,7 @@ const BacktestingIntegration = ({ lang = 'ar' }: BacktestingIntegrationProps) =>
 
       // Test 2: Strategy List
       await runTest(updatedTests, 1, async () => {
-        const strategies = backtestingService.getAvailableStrategies();
+        const strategies = mockBacktestingService.getAvailableStrategies();
         const requiredStrategies = ['sma_crossover', 'rsi_oversold', 'bollinger_bands'];
         const foundStrategies = strategies.filter(s => requiredStrategies.includes(s.id));
         
@@ -132,7 +131,7 @@ const BacktestingIntegration = ({ lang = 'ar' }: BacktestingIntegrationProps) =>
 
       // Test 3: Backtest Execution
       await runTest(updatedTests, 2, async () => {
-        const config: BacktestConfiguration = {
+        const config: MockBacktestConfiguration = {
           strategyId: 'sma_crossover',
           strategy: 'sma_crossover',
           symbol: 'BTC/USDT',
@@ -152,7 +151,7 @@ const BacktestingIntegration = ({ lang = 'ar' }: BacktestingIntegrationProps) =>
           }
         };
 
-        const result = await backtestingService.runBacktest(config);
+        const result = await mockBacktestingService.runBacktest(config);
         
         if (!result || typeof result.totalReturn !== 'number') {
           throw new Error('Invalid backtest result structure');
@@ -168,7 +167,7 @@ const BacktestingIntegration = ({ lang = 'ar' }: BacktestingIntegrationProps) =>
           throw new Error('No backtest result to process');
         }
 
-        const metrics = backtestingService.getDetailedMetrics(backtestResult);
+        const metrics = mockBacktestingService.getDetailedMetrics(backtestResult);
         
         if (!metrics || typeof metrics.volatility !== 'number') {
           throw new Error('Invalid metrics calculation');
