@@ -1,3 +1,4 @@
+
 import * as rs from 'jsrsasign';
 
 // Browser-compatible TOTP implementation

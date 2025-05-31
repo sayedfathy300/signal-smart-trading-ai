@@ -1,656 +1,591 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Shield, 
-  Bot, 
   AlertTriangle, 
+  Bot,
   Eye,
+  Zap,
   Activity,
-  Lock,
+  Users,
+  FileX,
+  Search,
+  TrendingUp,
+  Clock,
   CheckCircle,
   XCircle,
-  BarChart3,
-  TrendingUp,
-  Users,
-  Globe
+  AlertCircle
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { attackPreventionService, type AttackDetectionResult, type BotDetectionMetrics } from '@/services/attackPreventionService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { cn } from '@/lib/utils';
+import { attackPreventionService, AttackDetectionResult, BotDetectionMetrics } from '@/services/attackPreventionService';
 
 interface AttackPreventionDashboardProps {
-  lang: 'en' | 'ar';
+  lang?: 'en' | 'ar';
 }
 
-const AttackPreventionDashboard = ({ lang }: AttackPreventionDashboardProps) => {
-  const [stats, setStats] = useState<any>(null);
-  const [testInput, setTestInput] = useState('');
-  const [testResult, setTestResult] = useState<any>(null);
-  const [validationTest, setValidationTest] = useState({ email: '', password: '', amount: '' });
-  const [validationResult, setValidationResult] = useState<any>(null);
+const AttackPreventionDashboard = ({ lang = 'ar' }: AttackPreventionDashboardProps) => {
+  const [securityStats, setSecurityStats] = useState<any>(null);
+  const [attackResults, setAttackResults] = useState<AttackDetectionResult[]>([]);
   const [botMetrics, setBotMetrics] = useState<BotDetectionMetrics | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
-  const [realTimeData, setRealTimeData] = useState<any[]>([]);
+  
+  // Test data states
+  const [testIP, setTestIP] = useState('192.168.1.100');
+  const [testData, setTestData] = useState('{"action":"login","attempts":6}');
+  const [userAgent, setUserAgent] = useState(navigator.userAgent);
+  const [inputToSanitize, setInputToSanitize] = useState('<script>alert("XSS")</script>');
+  const [sanitizedOutput, setSanitizedOutput] = useState('');
+
+  // Charts data
+  const [threatTrends, setThreatTrends] = useState([
+    { time: '00:00', threats: 2, blocked: 1, bots: 3 },
+    { time: '04:00', threats: 1, blocked: 1, bots: 1 },
+    { time: '08:00', threats: 5, blocked: 4, bots: 2 },
+    { time: '12:00', threats: 8, blocked: 6, bots: 4 },
+    { time: '16:00', threats: 12, blocked: 10, bots: 6 },
+    { time: '20:00', threats: 7, blocked: 5, bots: 3 }
+  ]);
+
+  const [attackTypes, setAttackTypes] = useState([
+    { name: 'محاولات تسجيل دخول', value: 35, color: '#EF4444' },
+    { name: 'طلبات API مفرطة', value: 25, color: '#F97316' },
+    { name: 'تصفح مشبوه', value: 20, color: '#EAB308' },
+    { name: 'بوتات', value: 15, color: '#8B5CF6' },
+    { name: 'أخرى', value: 5, color: '#6B7280' }
+  ]);
 
   useEffect(() => {
     loadSecurityStats();
-    const interval = setInterval(loadSecurityStats, 30000); // تحديث كل 30 ثانية
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // محاكاة البيانات في الوقت الفعلي
-    const interval = setInterval(() => {
-      const newData = {
-        time: new Date().toLocaleTimeString(),
-        threats: Math.floor(Math.random() * 10),
-        blocked: Math.floor(Math.random() * 20),
-        bots: Math.floor(Math.random() * 5)
-      };
-      
-      setRealTimeData(prev => [...prev.slice(-20), newData]);
-    }, 5000);
-
+    const interval = setInterval(loadSecurityStats, 30000);
+    
     return () => clearInterval(interval);
   }, []);
 
   const loadSecurityStats = () => {
-    const securityStats = attackPreventionService.getSecurityStats();
-    setStats(securityStats);
+    const stats = attackPreventionService.getSecurityStats();
+    setSecurityStats(stats);
   };
 
-  const handleAnomalyTest = () => {
+  const handleTestAnomalyDetection = () => {
     setLoading(true);
     try {
-      const result = attackPreventionService.detectAnomaly('general', {
-        ip: '192.168.1.100',
+      const testEventData = {
+        ip: testIP,
         userAgent: navigator.userAgent,
-        action: testInput,
-        timestamp: Date.now()
-      }, 'test_user');
+        ...JSON.parse(testData)
+      };
+
+      const result = attackPreventionService.detectAnomaly('general', testEventData, 'test_user');
+      setAttackResults(prev => [result, ...prev.slice(0, 9)]); // Keep last 10 results
       
-      setTestResult(result);
+      console.log('🔍 نتيجة اختبار كشف الشذوذ:', result);
     } catch (error) {
-      console.error('خطأ في اختبار كشف الشذوذ:', error);
+      console.error('❌ خطأ في اختبار كشف الشذوذ:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBotDetection = () => {
+  const handleTestBotDetection = () => {
     setLoading(true);
     try {
-      const result = attackPreventionService.detectBot(navigator.userAgent, {
-        mouseMovements: [{x: 100, y: 200, timestamp: Date.now()}],
-        keyboardPattern: '100,150,120',
-        requests: []
-      });
+      const behaviorData = {
+        mouseMovements: Array.from({ length: 5 }, (_, i) => ({
+          x: Math.random() * 1000,
+          y: Math.random() * 600,
+          timestamp: Date.now() - i * 1000
+        })),
+        keyboardPattern: '100,150,120,200,90',
+        requests: Array.from({ length: 10 }, (_, i) => ({
+          timestamp: Date.now() - i * 5000,
+          endpoint: '/api/data'
+        }))
+      };
+
+      const metrics = attackPreventionService.detectBot(userAgent, behaviorData);
+      setBotMetrics(metrics);
       
-      setBotMetrics(result);
+      console.log('🤖 نتيجة اختبار كشف البوت:', metrics);
     } catch (error) {
-      console.error('خطأ في كشف البوتات:', error);
+      console.error('❌ خطأ في اختبار كشف البوت:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleValidationTest = () => {
-    setLoading(true);
-    try {
-      const result = attackPreventionService.validateData('login', validationTest);
-      setValidationResult(result);
-    } catch (error) {
-      console.error('خطأ في اختبار التحقق:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleSanitizeInput = () => {
+    const sanitized = attackPreventionService.sanitizeInput(inputToSanitize, 'html');
+    setSanitizedOutput(sanitized);
   };
 
-  const handleCSRFTest = () => {
-    const token = attackPreventionService.generateCSRFToken('test_session');
-    const isValid = attackPreventionService.validateCSRFToken('test_session', token);
-    alert(`CSRF Token: ${token}\nValidation: ${isValid ? 'صحيح' : 'خطأ'}`);
+  const handleValidateData = () => {
+    const testFormData = {
+      email: 'test@example.com',
+      password: 'WeakPass',
+      amount: '1000.50'
+    };
+
+    const validation = attackPreventionService.validateData('login', testFormData);
+    console.log('✅ نتيجة التحقق من البيانات:', validation);
   };
 
-  const handleXSSTest = () => {
-    const maliciousInput = '<script>alert("XSS")</script>Hello World';
-    const sanitized = attackPreventionService.sanitizeInput(maliciousInput, 'html');
-    alert(`Input: ${maliciousInput}\nSanitized: ${sanitized}`);
+  const getThreatLevel = (stats: any) => {
+    if (!stats) return { level: 'غير محدد', color: 'bg-gray-500', textColor: 'text-gray-400' };
+    
+    const totalThreats = stats.recentEvents || 0;
+    if (totalThreats > 20) return { level: 'عالي', color: 'bg-red-500', textColor: 'text-red-400' };
+    if (totalThreats > 10) return { level: 'متوسط', color: 'bg-yellow-500', textColor: 'text-yellow-400' };
+    if (totalThreats > 5) return { level: 'منخفض', color: 'bg-blue-500', textColor: 'text-blue-400' };
+    return { level: 'آمن', color: 'bg-green-500', textColor: 'text-green-400' };
   };
 
-  const threatData = [
-    { name: 'SQL Injection', value: 15, color: '#ff6b6b' },
-    { name: 'XSS', value: 25, color: '#feca57' },
-    { name: 'CSRF', value: 10, color: '#48dbfb' },
-    { name: 'Bot Traffic', value: 30, color: '#ff9ff3' },
-    { name: 'Brute Force', value: 20, color: '#54a0ff' }
-  ];
+  const formatTimestamp = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString('ar-SA');
+  };
 
-  const anomalyTrends = [
-    { time: '00:00', anomalies: 5, blocked: 12 },
-    { time: '04:00', anomalies: 8, blocked: 15 },
-    { time: '08:00', anomalies: 15, blocked: 28 },
-    { time: '12:00', anomalies: 22, blocked: 35 },
-    { time: '16:00', anomalies: 18, blocked: 30 },
-    { time: '20:00', anomalies: 12, blocked: 20 }
-  ];
+  if (!securityStats) {
+    return (
+      <div className="p-6 bg-trading-bg min-h-screen flex items-center justify-center">
+        <div className="text-white">جاري تحميل إحصائيات الأمان...</div>
+      </div>
+    );
+  }
+
+  const threatLevel = getThreatLevel(securityStats);
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-blue-900 p-6 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {lang === 'ar' ? 'لوحة مكافحة الهجمات' : 'Attack Prevention Dashboard'}
-            </h1>
-            <p className="text-gray-300">
-              {lang === 'ar' ? 'حماية متقدمة ضد التهديدات السيبرانية' : 'Advanced protection against cyber threats'}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={loadSecurityStats} variant="outline" className="text-white border-white/20">
-              <Activity className="h-4 w-4 mr-2" />
-              {lang === 'ar' ? 'تحديث' : 'Refresh'}
-            </Button>
-            <Button onClick={() => attackPreventionService.securityReset()} variant="destructive">
-              <Shield className="h-4 w-4 mr-2" />
-              {lang === 'ar' ? 'إعادة تعيين' : 'Reset'}
-            </Button>
-          </div>
+    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
+      {/* الرأس */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className={cn("text-3xl font-bold text-white", lang === 'ar' && 'rtl text-right')}>
+            {lang === 'ar' ? 'مكافحة الهجمات والتهديدات' : 'Attack Prevention & Threat Detection'}
+          </h1>
+          <p className="text-gray-400">
+            نظام متقدم لرصد ومنع الهجمات الإلكترونية والأنشطة المشبوهة
+          </p>
         </div>
-
-        {/* Security Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-300 text-sm">
-                    {lang === 'ar' ? 'التهديدات المحجوبة' : 'Threats Blocked'}
-                  </p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.threatsBlocked || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-red-500/20">
-                  <Shield className="h-6 w-6 text-red-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-300 text-sm">
-                    {lang === 'ar' ? 'البوتات المكتشفة' : 'Bots Detected'}
-                  </p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.botsDetected || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-yellow-500/20">
-                  <Bot className="h-6 w-6 text-yellow-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-300 text-sm">
-                    {lang === 'ar' ? 'IPs محجوبة' : 'Blacklisted IPs'}
-                  </p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.blacklistedIPs || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-purple-500/20">
-                  <Globe className="h-6 w-6 text-purple-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-300 text-sm">
-                    {lang === 'ar' ? 'الشذوذ النشط' : 'Active Anomalies'}
-                  </p>
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.activeAnomalies || 0}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-orange-500/20">
-                  <AlertTriangle className="h-6 w-6 text-orange-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className={cn("border-2", threatLevel.textColor)}>
+            مستوى التهديد: {threatLevel.level}
+          </Badge>
+          <Button
+            onClick={loadSecurityStats}
+            size="sm"
+            className="bg-trading-primary hover:bg-blue-600"
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            تحديث
+          </Button>
         </div>
+      </div>
 
-        {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white/10 backdrop-blur-md">
-            <TabsTrigger value="overview" className="text-white">
-              {lang === 'ar' ? 'نظرة عامة' : 'Overview'}
-            </TabsTrigger>
-            <TabsTrigger value="anomaly" className="text-white">
-              {lang === 'ar' ? 'كشف الشذوذ' : 'Anomaly Detection'}
-            </TabsTrigger>
-            <TabsTrigger value="bot" className="text-white">
-              {lang === 'ar' ? 'كشف البوتات' : 'Bot Detection'}
-            </TabsTrigger>
-            <TabsTrigger value="validation" className="text-white">
-              {lang === 'ar' ? 'التحقق' : 'Validation'}
-            </TabsTrigger>
-            <TabsTrigger value="protection" className="text-white">
-              {lang === 'ar' ? 'الحماية' : 'Protection'}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    {lang === 'ar' ? 'اتجاهات التهديدات' : 'Threat Trends'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={anomalyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="time" stroke="rgba(255,255,255,0.7)" />
-                      <YAxis stroke="rgba(255,255,255,0.7)" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(0,0,0,0.8)', 
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          borderRadius: '8px'
-                        }} 
-                      />
-                      <Legend />
-                      <Line type="monotone" dataKey="anomalies" stroke="#ff6b6b" strokeWidth={2} name="Anomalies" />
-                      <Line type="monotone" dataKey="blocked" stroke="#4ecdc4" strokeWidth={2} name="Blocked" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    {lang === 'ar' ? 'أنواع التهديدات' : 'Threat Types'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={threatData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {threatData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+      {/* الإحصائيات الرئيسية */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-trading-card border-gray-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">تهديدات محجوبة</p>
+                <p className="text-2xl font-bold text-red-400">
+                  {securityStats.threatsBlocked}
+                </p>
+              </div>
+              <Shield className="h-8 w-8 text-red-400" />
             </div>
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">
+                من أصل {securityStats.recentEvents} حدث
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Real-time monitoring */}
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  {lang === 'ar' ? 'المراقبة في الوقت الفعلي' : 'Real-time Monitoring'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={realTimeData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="time" stroke="rgba(255,255,255,0.7)" />
-                    <YAxis stroke="rgba(255,255,255,0.7)" />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.2)' }} />
-                    <Line type="monotone" dataKey="threats" stroke="#ff6b6b" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="blocked" stroke="#4ecdc4" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <Card className="bg-trading-card border-gray-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">بوتات مكتشفة</p>
+                <p className="text-2xl font-bold text-purple-400">
+                  {securityStats.botsDetected}
+                </p>
+              </div>
+              <Bot className="h-8 w-8 text-purple-400" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">
+                نشاط آلي مشبوه
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Anomaly Detection Tab */}
-          <TabsContent value="anomaly">
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  {lang === 'ar' ? 'اختبار كشف الشذوذ' : 'Anomaly Detection Test'}
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  {lang === 'ar' ? 'اختبار نظام كشف الأنشطة المشبوهة' : 'Test suspicious activity detection system'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="testInput" className="text-white">
-                      {lang === 'ar' ? 'نمط النشاط المراد اختباره:' : 'Activity pattern to test:'}
-                    </Label>
-                    <Input
-                      id="testInput"
-                      value={testInput}
-                      onChange={(e) => setTestInput(e.target.value)}
-                      placeholder={lang === 'ar' ? 'أدخل نمط النشاط...' : 'Enter activity pattern...'}
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                  <Button onClick={handleAnomalyTest} disabled={loading || !testInput.trim()}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    {loading ? (lang === 'ar' ? 'جاري الفحص...' : 'Testing...') : (lang === 'ar' ? 'اختبار الكشف' : 'Test Detection')}
-                  </Button>
-                </div>
+        <Card className="bg-trading-card border-gray-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">IPs محظورة</p>
+                <p className="text-2xl font-bold text-yellow-400">
+                  {securityStats.blacklistedIPs}
+                </p>
+              </div>
+              <FileX className="h-8 w-8 text-yellow-400" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">
+                عناوين محجوبة
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-                {testResult && (
-                  <div className={`p-4 rounded-lg ${testResult.threat ? 'bg-red-500/10 border border-red-500/20' : 'bg-green-500/10 border border-green-500/20'}`}>
-                    <div className="flex items-center gap-2 mb-4">
-                      {testResult.threat ? (
-                        <XCircle className="h-5 w-5 text-red-400" />
-                      ) : (
-                        <CheckCircle className="h-5 w-5 text-green-400" />
-                      )}
-                      <h4 className="text-white font-medium">
-                        {testResult.threat ? 
-                          (lang === 'ar' ? 'تم اكتشاف تهديد!' : 'Threat Detected!') : 
-                          (lang === 'ar' ? 'لا توجد تهديدات' : 'No Threats Detected')
-                        }
-                      </h4>
+        <Card className="bg-trading-card border-gray-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">مستخدمون مشبوهون</p>
+                <p className="text-2xl font-bold text-orange-400">
+                  {securityStats.suspiciousUsers}
+                </p>
+              </div>
+              <Users className="h-8 w-8 text-orange-400" />
+            </div>
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">
+                تحت المراقبة
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* الرسوم البيانية */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* اتجاهات التهديدات */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              اتجاهات التهديدات (24 ساعة)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={threatTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="time" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1F2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="threats" 
+                    stroke="#EF4444" 
+                    strokeWidth={2}
+                    name="تهديدات"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="blocked" 
+                    stroke="#22C55E" 
+                    strokeWidth={2}
+                    name="محجوبة"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="bots" 
+                    stroke="#8B5CF6" 
+                    strokeWidth={2}
+                    name="بوتات"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* أنواع الهجمات */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">توزيع أنواع الهجمات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={attackTypes}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                  >
+                    {attackTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* أدوات الاختبار */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* اختبار كشف الشذوذ */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              اختبار كشف الشذوذ
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="testIP" className="text-gray-300">عنوان IP</Label>
+              <Input
+                id="testIP"
+                value={testIP}
+                onChange={(e) => setTestIP(e.target.value)}
+                className="bg-trading-secondary border-gray-700"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="testData" className="text-gray-300">بيانات الاختبار (JSON)</Label>
+              <Input
+                id="testData"
+                value={testData}
+                onChange={(e) => setTestData(e.target.value)}
+                className="bg-trading-secondary border-gray-700"
+              />
+            </div>
+            
+            <Button
+              onClick={handleTestAnomalyDetection}
+              disabled={loading}
+              className="w-full bg-red-600 hover:bg-red-700"
+            >
+              {loading ? 'جاري الاختبار...' : 'اختبار كشف الشذوذ'}
+            </Button>
+
+            {attackResults.length > 0 && (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                <Label className="text-gray-300">نتائج الاختبار:</Label>
+                {attackResults.slice(0, 3).map((result, index) => (
+                  <div key={index} className="p-3 bg-trading-secondary rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={cn("text-sm font-medium", 
+                        result.threat ? 'text-red-400' : 'text-green-400'
+                      )}>
+                        {result.threat ? 'تهديد مكتشف' : 'آمن'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {formatTimestamp(result.timestamp)}
+                      </span>
                     </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">{lang === 'ar' ? 'نوع التهديد:' : 'Threat Type:'}</span>
-                        <span className="text-white">{testResult.threatType}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">{lang === 'ar' ? 'مستوى الثقة:' : 'Confidence:'}</span>
-                        <span className="text-white">{(testResult.confidence * 100).toFixed(1)}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">{lang === 'ar' ? 'محجوب:' : 'Blocked:'}</span>
-                        <span className={testResult.blocked ? 'text-red-400' : 'text-green-400'}>
-                          {testResult.blocked ? (lang === 'ar' ? 'نعم' : 'Yes') : (lang === 'ar' ? 'لا' : 'No')}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Progress value={testResult.confidence * 100} className="mt-4" />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Bot Detection Tab */}
-          <TabsContent value="bot">
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Bot className="h-5 w-5" />
-                  {lang === 'ar' ? 'كشف البوتات المتقدم' : 'Advanced Bot Detection'}
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  {lang === 'ar' ? 'تحليل السلوك لكشف الأنشطة الآلية' : 'Behavioral analysis for automated activity detection'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Button onClick={handleBotDetection} disabled={loading}>
-                  <Bot className="h-4 w-4 mr-2" />
-                  {loading ? (lang === 'ar' ? 'جاري التحليل...' : 'Analyzing...') : (lang === 'ar' ? 'فحص البوتات' : 'Detect Bots')}
-                </Button>
-
-                {botMetrics && (
-                  <div className="space-y-4">
-                    <div className={`p-4 rounded-lg ${botMetrics.isBot ? 'bg-red-500/10 border border-red-500/20' : 'bg-green-500/10 border border-green-500/20'}`}>
-                      <div className="flex items-center gap-2 mb-4">
-                        {botMetrics.isBot ? (
-                          <AlertTriangle className="h-5 w-5 text-red-400" />
-                        ) : (
-                          <CheckCircle className="h-5 w-5 text-green-400" />
-                        )}
-                        <h4 className="text-white font-medium">
-                          {botMetrics.isBot ? 
-                            (lang === 'ar' ? 'تم اكتشاف بوت!' : 'Bot Detected!') : 
-                            (lang === 'ar' ? 'مستخدم حقيقي' : 'Human User')
-                          }
-                        </h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-300">{lang === 'ar' ? 'نقاط السلوك:' : 'Behavior Score:'}</span>
-                          <p className="text-white font-mono">{botMetrics.behaviorScore}/100</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-300">{lang === 'ar' ? 'مستوى الثقة:' : 'Confidence:'}</span>
-                          <p className="text-white font-mono">{(botMetrics.confidence * 100).toFixed(1)}%</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-300">{lang === 'ar' ? 'بصمة المتصفح:' : 'Browser Fingerprint:'}</span>
-                          <p className="text-white font-mono text-xs">{botMetrics.browserFingerprint}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-300">{lang === 'ar' ? 'حركات الماوس:' : 'Mouse Movements:'}</span>
-                          <p className="text-white font-mono">{botMetrics.mouseMovements.length}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Validation Tab */}
-          <TabsContent value="validation">
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  {lang === 'ar' ? 'التحقق المتقدم من البيانات' : 'Advanced Data Validation'}
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  {lang === 'ar' ? 'اختبار نظام التحقق وتنظيف البيانات' : 'Test data validation and sanitization system'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="email" className="text-white">
-                      {lang === 'ar' ? 'البريد الإلكتروني:' : 'Email:'}
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={validationTest.email}
-                      onChange={(e) => setValidationTest({...validationTest, email: e.target.value})}
-                      placeholder="test@example.com"
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="password" className="text-white">
-                      {lang === 'ar' ? 'كلمة المرور:' : 'Password:'}
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={validationTest.password}
-                      onChange={(e) => setValidationTest({...validationTest, password: e.target.value})}
-                      placeholder="Password123!"
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="amount" className="text-white">
-                      {lang === 'ar' ? 'المبلغ:' : 'Amount:'}
-                    </Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={validationTest.amount}
-                      onChange={(e) => setValidationTest({...validationTest, amount: e.target.value})}
-                      placeholder="1000.50"
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                </div>
-
-                <Button onClick={handleValidationTest} disabled={loading}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {loading ? (lang === 'ar' ? 'جاري التحقق...' : 'Validating...') : (lang === 'ar' ? 'اختبار التحقق' : 'Test Validation')}
-                </Button>
-
-                {validationResult && (
-                  <div className={`p-4 rounded-lg ${validationResult.valid ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                    <div className="flex items-center gap-2 mb-4">
-                      {validationResult.valid ? (
-                        <CheckCircle className="h-5 w-5 text-green-400" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-400" />
-                      )}
-                      <h4 className="text-white font-medium">
-                        {validationResult.valid ? 
-                          (lang === 'ar' ? 'البيانات صحيحة' : 'Data Valid') : 
-                          (lang === 'ar' ? 'أخطاء في البيانات' : 'Data Errors')
-                        }
-                      </h4>
-                    </div>
-                    
-                    {!validationResult.valid && (
-                      <div className="space-y-2">
-                        <h5 className="text-red-300 font-medium">{lang === 'ar' ? 'الأخطاء:' : 'Errors:'}</h5>
-                        {validationResult.errors.map((error: string, index: number) => (
-                          <p key={index} className="text-red-300 text-sm">• {error}</p>
-                        ))}
+                    {result.threat && (
+                      <div className="text-xs text-gray-300">
+                        النوع: {result.threatType} | الثقة: {(result.confidence * 100).toFixed(0)}%
                       </div>
                     )}
-                    
-                    <div className="mt-4">
-                      <h5 className="text-green-300 font-medium">{lang === 'ar' ? 'البيانات المنظفة:' : 'Sanitized Data:'}</h5>
-                      <pre className="text-white text-xs bg-black/20 p-2 rounded mt-2 overflow-auto">
-                        {JSON.stringify(validationResult.sanitized, null, 2)}
-                      </pre>
-                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Protection Tab */}
-          <TabsContent value="protection">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Lock className="h-5 w-5" />
-                    {lang === 'ar' ? 'حماية CSRF' : 'CSRF Protection'}
-                  </CardTitle>
-                  <CardDescription className="text-gray-300">
-                    {lang === 'ar' ? 'اختبار نظام حماية Cross-Site Request Forgery' : 'Test Cross-Site Request Forgery protection'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleCSRFTest} className="w-full">
-                    <Shield className="h-4 w-4 mr-2" />
-                    {lang === 'ar' ? 'اختبار CSRF' : 'Test CSRF'}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-md border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    {lang === 'ar' ? 'حماية XSS' : 'XSS Protection'}
-                  </CardTitle>
-                  <CardDescription className="text-gray-300">
-                    {lang === 'ar' ? 'اختبار نظام حماية Cross-Site Scripting' : 'Test Cross-Site Scripting protection'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={handleXSSTest} className="w-full">
-                    <Eye className="h-4 w-4 mr-2" />
-                    {lang === 'ar' ? 'اختبار XSS' : 'Test XSS'}
-                  </Button>
-                </CardContent>
-              </Card>
+        {/* اختبار كشف البوت */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              اختبار كشف البوت
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="userAgent" className="text-gray-300">User Agent</Label>
+              <Input
+                id="userAgent"
+                value={userAgent}
+                onChange={(e) => setUserAgent(e.target.value)}
+                className="bg-trading-secondary border-gray-700"
+              />
             </div>
+            
+            <Button
+              onClick={handleTestBotDetection}
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {loading ? 'جاري الاختبار...' : 'اختبار كشف البوت'}
+            </Button>
 
-            {/* Security Metrics */}
-            <Card className="bg-white/10 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  {lang === 'ar' ? 'مقاييس الأمان' : 'Security Metrics'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-gray-300 text-sm">{lang === 'ar' ? 'إجمالي الأحداث' : 'Total Events'}</p>
-                    <p className="text-2xl font-bold text-white">{stats?.totalEvents || 0}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-300 text-sm">{lang === 'ar' ? 'الأحداث الأخيرة' : 'Recent Events'}</p>
-                    <p className="text-2xl font-bold text-white">{stats?.recentEvents || 0}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-300 text-sm">{lang === 'ar' ? 'المستخدمون المشبوهون' : 'Suspicious Users'}</p>
-                    <p className="text-2xl font-bold text-white">{stats?.suspiciousUsers || 0}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-300 text-sm">{lang === 'ar' ? 'نسبة الحجب' : 'Block Rate'}</p>
-                    <p className="text-2xl font-bold text-white">
-                      {stats?.totalEvents > 0 ? ((stats.threatsBlocked / stats.totalEvents) * 100).toFixed(1) : 0}%
-                    </p>
+            {botMetrics && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">هل هو بوت؟</span>
+                  <div className="flex items-center gap-2">
+                    {botMetrics.isBot ? 
+                      <XCircle className="h-4 w-4 text-red-400" /> : 
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    }
+                    <span className={cn("text-sm font-medium", 
+                      botMetrics.isBot ? 'text-red-400' : 'text-green-400'
+                    )}>
+                      {botMetrics.isBot ? 'نعم' : 'لا'}
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">نقاط السلوك:</span>
+                    <span className="text-white">{botMetrics.behaviorScore}/100</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full bg-purple-500"
+                      style={{ width: `${botMetrics.behaviorScore}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">مستوى الثقة:</span>
+                    <span className="text-white">{(botMetrics.confidence * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* أدوات الحماية */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* تنظيف البيانات */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              تنظيف البيانات (XSS Protection)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="inputToSanitize" className="text-gray-300">المدخل المشبوه</Label>
+              <Input
+                id="inputToSanitize"
+                value={inputToSanitize}
+                onChange={(e) => setInputToSanitize(e.target.value)}
+                className="bg-trading-secondary border-gray-700"
+              />
+            </div>
+            
+            <Button
+              onClick={handleSanitizeInput}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              تنظيف البيانات
+            </Button>
+
+            {sanitizedOutput && (
+              <div className="space-y-2">
+                <Label className="text-gray-300">النتيجة المنظفة:</Label>
+                <div className="p-3 bg-trading-secondary rounded-lg text-sm text-green-400 break-all">
+                  {sanitizedOutput || 'تم إزالة كل المحتوى الخطير'}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* التحقق من البيانات */}
+        <Card className="bg-trading-card border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              التحقق من البيانات
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm text-gray-300">
+              اختبار التحقق من صحة بيانات النماذج مع التنظيف التلقائي
+            </div>
+            
+            <Button
+              onClick={handleValidateData}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              اختبار التحقق من البيانات
+            </Button>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                يتم فحص الإيميل وقوة كلمة المرور والمبالغ المالية تلقائياً
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* سجل الأحداث الأمنية */}
+      <Card className="bg-trading-card border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            سجل الأحداث الأمنية
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { time: '14:32:15', type: 'تهديد محجوب', description: 'محاولة تسجيل دخول مشبوهة من IP: 192.168.1.50', severity: 'high' },
+              { time: '14:25:43', type: 'بوت مكتشف', description: 'نشاط آلي مكتشف في تصفح المنتجات', severity: 'medium' },
+              { time: '14:18:29', type: 'XSS محجوب', description: 'محاولة حقن سكريبت في حقل التعليقات', severity: 'high' },
+              { time: '14:12:07', type: 'API محدود', description: 'تجاوز حد الطلبات للمستخدم user_456', severity: 'low' },
+              { time: '14:05:33', type: 'IP محظور', description: 'إضافة 203.0.113.45 للقائمة السوداء', severity: 'medium' }
+            ].map((event, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-trading-secondary rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-3 h-3 rounded-full", {
+                    'bg-red-500': event.severity === 'high',
+                    'bg-yellow-500': event.severity === 'medium',
+                    'bg-blue-500': event.severity === 'low'
+                  })} />
+                  <div>
+                    <div className="text-white font-medium">{event.type}</div>
+                    <div className="text-sm text-gray-400">{event.description}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  <span className="text-xs text-gray-500">{event.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

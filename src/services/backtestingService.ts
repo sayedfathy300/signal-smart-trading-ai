@@ -1,4 +1,3 @@
-
 export interface BacktestParameters {
   strategy: string;
   startDate: string;
@@ -8,6 +7,19 @@ export interface BacktestParameters {
   timeframe: string;
   commission: number;
   slippage: number;
+}
+
+export interface BacktestConfiguration {
+  strategy: string;
+  symbol: string;
+  timeframe: string;
+  startDate: string;
+  endDate: string;
+  initialCapital: number;
+  commission: number;
+  slippage: number;
+  riskPerTrade: number;
+  maxDrawdown: number;
 }
 
 export interface BacktestTrade {
@@ -23,6 +35,17 @@ export interface BacktestTrade {
   pnlPercent: number;
   commission: number;
   duration: number;
+}
+
+export interface BacktestResult {
+  totalReturn: number;
+  totalReturnPercent: number;
+  annualizedReturn: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+  winRate: number;
+  totalTrades: number;
+  trades: BacktestTrade[];
 }
 
 export interface BacktestResultData {
@@ -61,6 +84,33 @@ export interface BacktestResultData {
     worstDay: number;
     consecutiveWins: number;
     consecutiveLosses: number;
+  };
+}
+
+export interface BacktestMetrics {
+  returnMetrics: {
+    totalReturn: number;
+    annualizedReturn: number;
+    monthlyReturn: number;
+    dailyReturn: number;
+  };
+  riskMetrics: {
+    volatility: number;
+    maxDrawdown: number;
+    valueAtRisk: number;
+    expectedShortfall: number;
+  };
+  ratioMetrics: {
+    sharpeRatio: number;
+    sortinoRatio: number;
+    calmarRatio: number;
+    informationRatio: number;
+  };
+  tradeMetrics: {
+    totalTrades: number;
+    winRate: number;
+    profitFactor: number;
+    avgTradeDuration: number;
   };
 }
 
@@ -110,6 +160,48 @@ class BacktestingService {
 
     // توليد نتائج الباك تيست
     return this.generateBacktestResults(params);
+  }
+
+  getDetailedMetrics(result: BacktestResultData): BacktestMetrics {
+    return {
+      returnMetrics: {
+        totalReturn: result.totalReturn,
+        annualizedReturn: result.annualizedReturn,
+        monthlyReturn: result.annualizedReturn / 12,
+        dailyReturn: result.annualizedReturn / 252
+      },
+      riskMetrics: {
+        volatility: result.volatility,
+        maxDrawdown: result.maxDrawdown,
+        valueAtRisk: this.calculateVaR(result.trades),
+        expectedShortfall: this.calculateES(result.trades)
+      },
+      ratioMetrics: {
+        sharpeRatio: result.sharpeRatio,
+        sortinoRatio: result.sortinoRatio,
+        calmarRatio: result.calmarRatio,
+        informationRatio: result.sharpeRatio * 0.9
+      },
+      tradeMetrics: {
+        totalTrades: result.totalTrades,
+        winRate: result.winRate,
+        profitFactor: result.profitFactor,
+        avgTradeDuration: result.avgTradeDuration
+      }
+    };
+  }
+
+  private calculateVaR(trades: BacktestTrade[], confidence: number = 0.05): number {
+    const returns = trades.map(t => t.pnlPercent).sort((a, b) => a - b);
+    const index = Math.floor(returns.length * confidence);
+    return returns[index] || 0;
+  }
+
+  private calculateES(trades: BacktestTrade[], confidence: number = 0.05): number {
+    const returns = trades.map(t => t.pnlPercent).sort((a, b) => a - b);
+    const index = Math.floor(returns.length * confidence);
+    const tailReturns = returns.slice(0, index);
+    return tailReturns.reduce((sum, r) => sum + r, 0) / tailReturns.length || 0;
   }
 
   private async simulateBacktestExecution(): Promise<void> {
