@@ -1,78 +1,127 @@
 
 import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import DeFiTrading from '@/components/blockchain/DeFiTrading';
-import NFTPortfolio from '@/components/blockchain/NFTPortfolio';
-import CrossChainArbitrage from '@/components/blockchain/CrossChainArbitrage';
-import SmartContracts from '@/components/blockchain/SmartContracts';
-import { Coins, Image, Shuffle, FileCode } from 'lucide-react';
+import { Coins, Link, Shield, Zap } from 'lucide-react';
 
-interface BlockchainIntegrationProps {
-  lang?: 'en' | 'ar';
-}
-
-const BlockchainIntegration = ({ lang = 'ar' }: BlockchainIntegrationProps) => {
+const BlockchainIntegration = () => {
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            {lang === 'ar' ? 'تكامل البلوك تشين' : 'Blockchain Integration'}
-          </h1>
-          <p className="text-gray-400">
-            {lang === 'ar' 
-              ? 'تداول DeFi وتتبع NFT والمراجحة متعددة السلاسل'
-              : 'DeFi trading, NFT tracking, and cross-chain arbitrage'}
-          </p>
+    <div className="min-h-screen bg-slate-900 text-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-center">
+          تكامل البلوك تشين
+        </h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Coins className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">العملات المدعومة</h3>
+            <p className="text-2xl font-bold text-yellow-400">15</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Link className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">الشبكات المتصلة</h3>
+            <p className="text-2xl font-bold text-blue-400">8</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Shield className="h-12 w-12 text-green-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">العقود الذكية</h3>
+            <p className="text-2xl font-bold text-green-400">نشط</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Zap className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">DeFi بروتوكولات</h3>
+            <p className="text-2xl font-bold text-purple-400">12</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-900/30 rounded-lg border border-green-700">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-green-300 text-sm">
-              {lang === 'ar' ? 'Web3 متصل' : 'Web3 Connected'}
-            </span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">العملات المشفرة المدعومة</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    ₿
+                  </div>
+                  <span>Bitcoin (BTC)</span>
+                </div>
+                <span className="text-green-400">متصل</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    Ξ
+                  </div>
+                  <span>Ethereum (ETH)</span>
+                </div>
+                <span className="text-green-400">متصل</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    ◉
+                  </div>
+                  <span>Binance Smart Chain</span>
+                </div>
+                <span className="text-green-400">متصل</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-xs font-bold">
+                    ◎
+                  </div>
+                  <span>Solana (SOL)</span>
+                </div>
+                <span className="text-yellow-400">قيد الاتصال</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">إحصائيات التداول</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>حجم التداول اليومي</span>
+                  <span className="text-green-400">$2.4M</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-green-400 h-2 rounded-full" style={{width: '78%'}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>رسوم المعاملات</span>
+                  <span className="text-blue-400">0.025%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-blue-400 h-2 rounded-full" style={{width: '25%'}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>سرعة التنفيذ</span>
+                  <span className="text-purple-400">2.3s</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-purple-400 h-2 rounded-full" style={{width: '92%'}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>موثوقية الشبكة</span>
+                  <span className="text-yellow-400">99.8%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-yellow-400 h-2 rounded-full" style={{width: '99.8%'}}></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Main Tabs */}
-      <Tabs defaultValue="defi-trading" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
-          <TabsTrigger value="defi-trading" className="flex items-center gap-2">
-            <Coins className="h-4 w-4" />
-            {lang === 'ar' ? 'تداول DeFi' : 'DeFi Trading'}
-          </TabsTrigger>
-          <TabsTrigger value="nft-portfolio" className="flex items-center gap-2">
-            <Image className="h-4 w-4" />
-            {lang === 'ar' ? 'محفظة NFT' : 'NFT Portfolio'}
-          </TabsTrigger>
-          <TabsTrigger value="cross-chain" className="flex items-center gap-2">
-            <Shuffle className="h-4 w-4" />
-            {lang === 'ar' ? 'المراجحة متعددة السلاسل' : 'Cross-Chain Arbitrage'}
-          </TabsTrigger>
-          <TabsTrigger value="smart-contracts" className="flex items-center gap-2">
-            <FileCode className="h-4 w-4" />
-            {lang === 'ar' ? 'العقود الذكية' : 'Smart Contracts'}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="defi-trading">
-          <DeFiTrading lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="nft-portfolio">
-          <NFTPortfolio lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="cross-chain">
-          <CrossChainArbitrage lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="smart-contracts">
-          <SmartContracts lang={lang} />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };

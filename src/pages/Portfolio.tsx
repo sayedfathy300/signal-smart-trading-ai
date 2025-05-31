@@ -1,241 +1,103 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown,
-  PieChart,
-  BarChart3,
-  RefreshCw,
-  Plus,
-  Minus
-} from 'lucide-react';
+import React from 'react';
+import { BarChart3, TrendingUp, DollarSign, PieChart } from 'lucide-react';
 
-interface PortfolioProps {
-  lang?: 'en' | 'ar';
-}
-
-const Portfolio = ({ lang = 'ar' }: PortfolioProps) => {
-  const [loading, setLoading] = useState(false);
-
-  // بيانات المحفظة التجريبية
-  const portfolioData = {
-    totalValue: 125430.67,
-    totalProfit: 15234.50,
-    totalProfitPercent: 13.85,
-    todayChange: 1234.56,
-    todayChangePercent: 0.99
-  };
-
-  const positions = [
-    {
-      symbol: 'EUR/USD',
-      type: 'BUY',
-      size: 10000,
-      entryPrice: 1.0850,
-      currentPrice: 1.0920,
-      profit: 700,
-      profitPercent: 0.65,
-      unrealizedPL: 700
-    },
-    {
-      symbol: 'GBP/USD',
-      type: 'SELL',
-      size: 5000,
-      entryPrice: 1.2650,
-      currentPrice: 1.2580,
-      profit: 350,
-      profitPercent: 0.55,
-      unrealizedPL: 350
-    },
-    {
-      symbol: 'USD/JPY',
-      type: 'BUY',
-      size: 8000,
-      entryPrice: 149.50,
-      currentPrice: 150.20,
-      profit: 374,
-      profitPercent: 0.47,
-      unrealizedPL: 374
-    }
-  ];
-
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
-  };
-
+const Portfolio = () => {
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* الرأس */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            {lang === 'ar' ? 'محفظة التداول' : 'Trading Portfolio'}
-          </h1>
-          <p className="text-gray-400">
-            {lang === 'ar' ? 'إدارة المحفظة ومراقبة الأداء' : 'Portfolio Management and Performance Monitoring'}
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-900 text-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-center">
+          إدارة المحفظة الاستثمارية
+        </h1>
         
-        <Button
-          onClick={handleRefresh}
-          disabled={loading}
-          size="sm"
-          className="bg-trading-primary hover:bg-blue-600"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? (lang === 'ar' ? 'جاري التحديث...' : 'Updating...') : (lang === 'ar' ? 'تحديث' : 'Refresh')}
-        </Button>
-      </div>
-
-      {/* إحصائيات المحفظة */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <DollarSign className="h-8 w-8 text-trading-up" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold text-white">
-                  ${portfolioData.totalValue.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'إجمالي قيمة المحفظة' : 'Total Portfolio Value'}
-                </div>
+                <p className="text-gray-400">إجمالي الأصول</p>
+                <p className="text-2xl font-bold text-green-400">$125,430</p>
               </div>
+              <DollarSign className="h-8 w-8 text-green-400" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-trading-up" />
-              <div>
-                <div className="text-2xl font-bold text-trading-up">
-                  +${portfolioData.totalProfit.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'إجمالي الأرباح' : 'Total Profit'}
-                </div>
-                <div className="text-xs text-trading-up">
-                  +{portfolioData.totalProfitPercent}%
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-blue-400" />
-              <div>
-                <div className="text-2xl font-bold text-trading-up">
-                  +${portfolioData.todayChange.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'تغيير اليوم' : "Today's Change"}
-                </div>
-                <div className="text-xs text-trading-up">
-                  +{portfolioData.todayChangePercent}%
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-trading-card border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <PieChart className="h-8 w-8 text-purple-400" />
-              <div>
-                <div className="text-2xl font-bold text-white">
-                  {positions.length}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {lang === 'ar' ? 'المراكز النشطة' : 'Active Positions'}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* المراكز النشطة */}
-      <Card className="bg-trading-card border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            {lang === 'ar' ? 'المراكز النشطة' : 'Active Positions'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {positions.map((position, index) => (
-              <div key={index} className="bg-trading-secondary p-4 rounded-lg border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-lg">{position.symbol}</span>
-                        <Badge 
-                          variant={position.type === 'BUY' ? 'default' : 'destructive'}
-                          className={position.type === 'BUY' ? 'bg-trading-up' : 'bg-trading-down'}
-                        >
-                          {position.type}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {lang === 'ar' ? 'الحجم:' : 'Size:'} {position.size.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div className="text-sm text-gray-400">
-                          {lang === 'ar' ? 'سعر الدخول' : 'Entry Price'}
-                        </div>
-                        <div className="font-bold text-white">{position.entryPrice}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-400">
-                          {lang === 'ar' ? 'السعر الحالي' : 'Current Price'}
-                        </div>
-                        <div className="font-bold text-white">{position.currentPrice}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-400">
-                          {lang === 'ar' ? 'الربح/الخسارة' : 'P&L'}
-                        </div>
-                        <div className={`font-bold ${position.profit >= 0 ? 'text-trading-up' : 'text-trading-down'}`}>
-                          {position.profit >= 0 ? '+' : ''}${position.profit}
-                        </div>
-                        <div className={`text-xs ${position.profit >= 0 ? 'text-trading-up' : 'text-trading-down'}`}>
-                          {position.profit >= 0 ? '+' : ''}{position.profitPercent}%
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="border-trading-up text-trading-up hover:bg-trading-up hover:text-white">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="border-trading-down text-trading-down hover:bg-trading-down hover:text-white">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">الربح اليومي</p>
+                <p className="text-2xl font-bold text-blue-400">+$1,245</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-blue-400" />
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">عدد الأسهم</p>
+                <p className="text-2xl font-bold text-purple-400">24</p>
+              </div>
+              <PieChart className="h-8 w-8 text-purple-400" />
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">العائد السنوي</p>
+                <p className="text-2xl font-bold text-yellow-400">+15.2%</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-yellow-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">توزيع المحفظة</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span>الأسهم الأمريكية</span>
+                <span className="text-green-400">60%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>العملات المشفرة</span>
+                <span className="text-blue-400">25%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>السندات</span>
+                <span className="text-purple-400">10%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>السلع</span>
+                <span className="text-yellow-400">5%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">أفضل الأداء</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span>AAPL</span>
+                <span className="text-green-400">+8.5%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>TSLA</span>
+                <span className="text-green-400">+12.3%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>BTC</span>
+                <span className="text-red-400">-2.1%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>GOLD</span>
+                <span className="text-green-400">+3.7%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

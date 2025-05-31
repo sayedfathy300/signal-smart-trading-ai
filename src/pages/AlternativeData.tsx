@@ -1,78 +1,98 @@
 
 import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import WeatherData from '@/components/alternative-data/WeatherData';
-import SupplyChainData from '@/components/alternative-data/SupplyChainData';
-import PatentAnalysis from '@/components/alternative-data/PatentAnalysis';
-import ExecutiveSentiment from '@/components/alternative-data/ExecutiveSentiment';
-import { Cloud, Truck, FileText, User } from 'lucide-react';
+import { Database, Satellite, TrendingUp, Globe } from 'lucide-react';
 
-interface AlternativeDataProps {
-  lang?: 'en' | 'ar';
-}
-
-const AlternativeData = ({ lang = 'ar' }: AlternativeDataProps) => {
+const AlternativeData = () => {
   return (
-    <div className="p-6 space-y-6 bg-trading-bg min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">
-            {lang === 'ar' ? 'مصادر البيانات البديلة' : 'Alternative Data Sources'}
-          </h1>
-          <p className="text-gray-400">
-            {lang === 'ar' 
-              ? 'تحليل شامل للبيانات غير التقليدية: الطقس، سلاسل التوريد، براءات الاختراع، والمشاعر التنفيذية'
-              : 'Comprehensive analysis of non-traditional data: weather, supply chains, patents, and executive sentiment'}
-          </p>
+    <div className="min-h-screen bg-slate-900 text-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-center">
+          البيانات البديلة
+        </h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Database className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">مصادر البيانات</h3>
+            <p className="text-2xl font-bold text-blue-400">127</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Satellite className="h-12 w-12 text-green-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">البيانات الفضائية</h3>
+            <p className="text-2xl font-bold text-green-400">نشط</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <TrendingUp className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">دقة التنبؤ</h3>
+            <p className="text-2xl font-bold text-purple-400">92.3%</p>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg text-center">
+            <Globe className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">البيانات الاجتماعية</h3>
+            <p className="text-2xl font-bold text-yellow-400">15M</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-900/30 rounded-lg border border-green-700">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-green-300 text-sm">
-              {lang === 'ar' ? 'البيانات محدثة' : 'Data Updated'}
-            </span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">مصادر البيانات النشطة</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <span>بيانات الأقمار الصناعية</span>
+                <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">متصل</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <span>بيانات وسائل التواصل</span>
+                <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">متصل</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <span>بيانات الطقس</span>
+                <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded">تأخير</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-700 rounded">
+                <span>بيانات النقل</span>
+                <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">متصل</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">تحليل المشاعر</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>المشاعر الإيجابية</span>
+                  <span className="text-green-400">65%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-green-400 h-2 rounded-full" style={{width: '65%'}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>المشاعر السلبية</span>
+                  <span className="text-red-400">20%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-red-400 h-2 rounded-full" style={{width: '20%'}}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span>المشاعر المحايدة</span>
+                  <span className="text-gray-400">15%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-gray-400 h-2 rounded-full" style={{width: '15%'}}></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Main Tabs */}
-      <Tabs defaultValue="weather" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-trading-card">
-          <TabsTrigger value="weather" className="flex items-center gap-2">
-            <Cloud className="h-4 w-4" />
-            {lang === 'ar' ? 'بيانات الطقس' : 'Weather Data'}
-          </TabsTrigger>
-          <TabsTrigger value="supply-chain" className="flex items-center gap-2">
-            <Truck className="h-4 w-4" />
-            {lang === 'ar' ? 'سلاسل التوريد' : 'Supply Chain'}
-          </TabsTrigger>
-          <TabsTrigger value="patents" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            {lang === 'ar' ? 'براءات الاختراع' : 'Patent Analysis'}
-          </TabsTrigger>
-          <TabsTrigger value="executive-sentiment" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            {lang === 'ar' ? 'المشاعر التنفيذية' : 'Executive Sentiment'}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="weather">
-          <WeatherData lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="supply-chain">
-          <SupplyChainData lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="patents">
-          <PatentAnalysis lang={lang} />
-        </TabsContent>
-
-        <TabsContent value="executive-sentiment">
-          <ExecutiveSentiment lang={lang} />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };
