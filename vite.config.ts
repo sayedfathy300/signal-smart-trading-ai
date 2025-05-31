@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Completely replace ccxt with our mock
+      "ccxt": path.resolve(__dirname, "./src/services/mockBacktestingService.ts"),
     },
   },
   build: {
@@ -24,7 +26,7 @@ export default defineConfig(({ mode }) => ({
       external: [
         'ccxt',
         'socks-proxy-agent',
-        'https-proxy-agent',
+        'https-proxy-agent', 
         'http-proxy-agent',
         'ws',
         'node-fetch',
@@ -47,14 +49,30 @@ export default defineConfig(({ mode }) => ({
         'events',
         'http',
         'https',
-        'assert'
+        'assert',
+        'crypto',
+        'fs',
+        'path',
+        'os',
+        'util',
+        'stream',
+        'buffer',
+        'process',
+        'zlib'
       ]
     }
   },
   define: {
     global: 'globalThis',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   optimizeDeps: {
-    exclude: ['ccxt']
+    exclude: [
+      'ccxt',
+      'http-proxy-agent',
+      'https-proxy-agent',
+      'socks-proxy-agent'
+    ],
+    include: []
   }
 }));
