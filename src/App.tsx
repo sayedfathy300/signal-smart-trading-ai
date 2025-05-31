@@ -6,6 +6,8 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppLayout } from '@/components/AppLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Import pages
 import Index from '@/pages/Index';
 import Dashboard from '@/pages/Dashboard';
 import Charts from '@/pages/Charts';
