@@ -1,14 +1,10 @@
 
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
 import TradingPlatformComponent from '@/components/TradingPlatform';
 
-interface OutletContext {
-  lang: 'en' | 'ar';
-}
-
 const TradingPlatform = () => {
-  const { lang } = useOutletContext<OutletContext>();
+  // بدلاً من استخدام useOutletContext، سنستخدم قيمة افتراضية للغة
+  const lang = 'ar'; // يمكن الحصول على هذه القيمة من مكان آخر في المستقبل
   
   return <TradingPlatformComponent lang={lang} />;
 };
